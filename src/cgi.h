@@ -1,5 +1,4 @@
-#ifndef CGI_H
-#define CGI_H
+#pragma once
 
 #include "common.h"
 #include "http.h"
@@ -18,8 +17,3 @@ cgi_toupper(const char *string);
 
 bool
 cgi_is_script(struct path_s *path);
-
-status_t
-serve_cgi(struct http_response_s *response, struct http_request_s *request);
-
-#endif /* CGI_H */

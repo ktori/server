@@ -1,5 +1,4 @@
-#ifndef ROUTER_H
-#define ROUTER_H
+#pragma once
 
 #include "common.h"
 #include "http.h"
@@ -25,5 +24,3 @@ add_server(server_fn server);
 /*http_status
 serve_index(struct http_request_s *request, struct http_response_s *response);
 */
-
-#endif /* ROUTER_H */

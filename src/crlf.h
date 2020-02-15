@@ -1,5 +1,4 @@
-#ifndef CRLF_H
-#define CRLF_H
+#pragma once
 
 #include "common.h"
 
@@ -26,5 +25,3 @@ crlf_array_from_buffer(char *buffer, size_t size, struct crlf_array_s **array);
 
 void
 crlf_array_free(struct crlf_array_s *array);
-
-#endif /* CRLF_H */

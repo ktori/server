@@ -1,10 +1,7 @@
-#ifndef MIME_H
-#define MIME_H
+#pragma once
 
 void
 mimeinit(void);
 
 const char *
 mimetype(const char *filename);
-
-#endif

@@ -1,0 +1,7 @@
+/*
+ * Created by victoria on 15.02.20.
+*/
+
+#pragma once
+
+#cmakedefine01 SERVER_USE_SSL

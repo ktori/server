@@ -1,10 +1,8 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
-#include "common.h"
 #include "kv.h"
 
 struct kv_list_s *
 config_load(const char *filename);
 
-#endif /* CONFIG_H */
+struct kv_list_s *global_config;

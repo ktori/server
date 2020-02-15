@@ -1,5 +1,4 @@
-#ifndef KV_H
-#define KV_H
+#pragma once
 
 #include "common.h"
 
@@ -64,5 +63,3 @@ kv_int(struct kv_list_s *list, const char *key, int fallback);
 
 char **
 kv_array(struct kv_list_s *list, const char *key, char delim);
-
-#endif /* KV_H */

@@ -1,5 +1,4 @@
-#ifndef HTTP_H
-#define HTTP_H
+#pragma once
 
 #include "common.h"
 #include "kv.h"
@@ -47,7 +46,7 @@ struct http_response_s
 	int version_minor;
 
 	char *body;
-	int length;
+	size_t length;
 	bool raw;
 
 	struct kv_list_s *headers;
@@ -63,5 +62,3 @@ http_response_length(struct http_response_s *response);
 
 void
 http_response_free(struct http_response_s *response);
-
-#endif /* HTTP_H */
