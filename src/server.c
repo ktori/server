@@ -20,6 +20,7 @@
 #include "path.h"
 #include "server.h"
 #include "url.h"
+#include "serve/serve.h"
 #include <src/options.h>
 
 #if SERVER_USE_SSL
@@ -33,7 +34,6 @@
 #define LISTEN_BACKLOG 10
 #define FORK_CLIENTS TRUE
 
-struct kv_list_s *config;
 char *documentroot;
 #if SERVER_USE_SSL
 SSL_CTX *ssl_ctx;
@@ -47,6 +47,7 @@ SSL_CTX *ssl_ctx;
 int
 recv_http(SSL *ssl, char **buf)
 #else
+
 int
 recv_http(int sock, char **buf)
 #endif
@@ -130,6 +131,7 @@ send_all(SSL *ssl, char *buffer, int length)
 }
 
 #else
+
 int
 send_all(int sock, char *buffer, int length)
 {
@@ -144,6 +146,7 @@ send_all(int sock, char *buffer, int length)
 	}
 	return 0;
 }
+
 #endif
 
 int server_socket = -1;
@@ -214,13 +217,13 @@ srv_setup(int *sockfd_out)
 	}
 	SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
 
-	const char *cert_path = kv_string(config, "ssl.cert", NULL);
+	const char *cert_path = kv_string(global_config, "ssl.cert", NULL);
 	if (cert_path == NULL)
 	{
 		fprintf(stderr, "ssl.cert not set\n");
 		return -1;
 	}
-	const char *key_path = kv_string(config, "ssl.key", NULL);
+	const char *key_path = kv_string(global_config, "ssl.key", NULL);
 	if (key_path == NULL)
 	{
 		fprintf(stderr, "ssl.key not set\n");
@@ -247,7 +250,7 @@ srv_setup(int *sockfd_out)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	status = getaddrinfo(0, kv_string(config, "port", "8080"), &hints, &info);
+	status = getaddrinfo(0, kv_string(global_config, "port", "8080"), &hints, &info);
 	if (status != 0)
 	{
 		printf("[error] getaddrinfo returned %d\n", status);
@@ -291,241 +294,6 @@ srv_setup(int *sockfd_out)
 
 	printf("server (%d) is listening on port %hd\n", *sockfd_out, port);
 	return 0;
-}
-
-void
-serve_string(struct http_response_s *response, const char *string)
-{
-	int len = strlen(string);
-	kv_push(response->headers, "Content-Type", "text/plain");
-	response->body = malloc(len);
-	strncpy(response->body, string, len);
-	response->length = len;
-}
-
-void
-serve_error(struct http_response_s *response, int error, const char *detail)
-{
-	char errcfg[32];
-	snprintf(errcfg, 32, "err.%d", error);
-
-	response->code = error;
-
-	if (kv_isset(config, errcfg) == TRUE)
-	{
-		if (serve_file(response, kv_string(config, errcfg, "error.html"), TRUE) ==
-			SUCCESS)
-		{
-			return;
-		}
-	}
-
-	serve_string(response, detail);
-}
-
-status_t
-serve_file(struct http_response_s *response, const char *filename, bool noerr)
-{
-	FILE *file;
-	int length;
-	printf("trying to serve %s\n", filename);
-	if (access(filename, R_OK) != SUCCESS)
-	{
-		if (noerr == FALSE)
-		{
-			if (errno == ENOENT)
-			{
-				serve_error(response, 404, "Not Found");
-			}
-			else if (errno == EACCES)
-			{
-				serve_error(response, 403, "Forbidden");
-			}
-		}
-		return FAILURE;
-	}
-
-	file = fopen(filename, "r");
-	if (file == NULL)
-	{
-		if (noerr == FALSE)
-		{
-			serve_error(response, 500, "Internal server error");
-		}
-		return FAILURE;
-	}
-	fseek(file, 0L, SEEK_END);
-	length = ftell(file);
-	fseek(file, 0L, SEEK_SET);
-	response->body = malloc(length);
-	fread(response->body, 1, length, file);
-	fclose(file);
-	response->length = length;
-	kv_push(response->headers, "Content-Type", mimetype(filename));
-	printf("Served file %s with length %d\n", filename, length);
-	return SUCCESS;
-}
-
-void
-serve_index(struct http_response_s *response, const char *folder)
-{
-	struct dirent *dp;
-	DIR *dir;
-	char pathbuf[512];
-	char *body;
-	char *tmp_name;
-	char *tmp_realname;
-	int total, len;
-	struct stat filestat;
-	struct path_s *path;
-
-	snprintf(pathbuf, 512, "%s/%s", documentroot, folder);
-
-	dir = opendir(pathbuf);
-	if (dir == NULL)
-	{
-		serve_error(response, 404, "Not Found");
-		return;
-	}
-	total = 0;
-	body = calloc(1, 1024 * 16);
-
-	len =
-			sprintf(body,
-					"<html><head><title>Index of %s</title><meta charset="
-					"\"UTF-8\"><base href=\"%s\"></head><body><h1>Index of %s</h1><hr>"
-					"<table style=\"font-family:monospace\">",
-					folder,
-					folder,
-					folder);
-	total += len;
-
-	dp = readdir(dir);
-
-	while (dp != NULL)
-	{
-		path = path_make(folder);
-		path_push(path, dp->d_name);
-		tmp_name = path_to_string(path, "");
-		tmp_realname = path_to_string(path, documentroot);
-		printf("file: %s %s\n", tmp_realname, tmp_name);
-		if (stat(tmp_realname, &filestat) == SUCCESS)
-		{
-			len = snprintf(body + total,
-						   1024 * 16 - total,
-						   "<tr><td><a href=\"%s\""
-						   ">%s</a></td><td>",
-						   tmp_name,
-						   dp->d_name);
-			total += len;
-			if (!S_ISDIR(filestat.st_mode))
-			{
-				if (sizeof(off_t) == sizeof(long long))
-				{
-					len = snprintf(body + total,
-								   1024 * 16 - total,
-								   "%lld bytes",
-								   (long long) filestat.st_size);
-				}
-				else
-				{
-					len = snprintf(body + total,
-								   1024 * 16 - total,
-								   "%ld bytes",
-								   (long) filestat.st_size);
-				}
-			}
-			else
-			{
-				len = snprintf(body + total, 1024 * 16 - total, "Directory");
-			}
-			total += len;
-		}
-		path_free(path);
-		free(path);
-		free(tmp_name);
-		free(tmp_realname);
-		dp = readdir(dir);
-	}
-
-	len = snprintf(body + total, 1024 * 16 - total, "</table></body></html>");
-
-	response->body = body;
-	response->length = total;
-
-	closedir(dir);
-}
-
-int
-serve(struct http_request_s *request, struct http_response_s *response)
-{
-	char clength[16];
-	char *uri_path;
-	struct stat buf;
-
-	memset(&buf, 0, sizeof(buf));
-
-	response->version_major = 1;
-	response->version_minor = 1;
-	response->code = 200;
-
-	if (request == NULL || !STREQ(request->method, "GET") ||
-		request->uri == NULL || request->uri->path == NULL)
-	{
-		serve_error(response, 400, "Bad Request");
-		return FAILURE;
-	}
-
-	/*    printf("%s %s HTTP %d.%d\n", request->method, request->uri->complete,
-	   request->version_major, request->version_minor); header =
-	   request->headers.first; while (header != NULL)
-		{
-			printf("%s: %s\n", header->name, header->value);
-			header = header->next;
-		}
-
-		printf("URI breakdown:\n");
-		printf("%s :// %s @ %s : %s %s ? %s # %s\n", request->uri->scheme,
-	   request->uri->userinfo, request->uri->host, request->uri->port,
-	   request->uri->spath, request->uri->querystring, request->uri->fragment);
-		printf("Body: %d bytes long\n", request->length);
-	  */
-	uri_path = path_to_string(request->uri->path, documentroot);
-	printf("Requested URI = %s\n", uri_path);
-
-	if (serve_cgi(response, request) == SKIPPED)
-	{
-		stat(uri_path, &buf);
-		if (S_ISDIR(buf.st_mode))
-		{
-			free(uri_path);
-			path_push(request->uri->path, kv_string(config, "index", "index.html"));
-			uri_path = path_to_string(request->uri->path, documentroot);
-			if (stat(uri_path, &buf) != SUCCESS)
-			{
-				path_pop(request->uri->path);
-				free(uri_path);
-				uri_path = path_to_string(request->uri->path, ".");
-				serve_index(response, uri_path);
-			}
-			else
-			{
-				serve_file(response, uri_path, FALSE);
-			}
-		}
-		else
-		{
-			serve_file(response, uri_path, FALSE);
-		}
-	}
-
-	free(uri_path);
-
-	snprintf(clength, 15, "%d", response->length);
-	kv_push(response->headers, "Content-Length", clength);
-	kv_push(response->headers, "Server", "server.c");
-
-	return SUCCESS;
 }
 
 int
@@ -661,7 +429,7 @@ setup_document_root(void)
 	char cwd[PATH_MAX + 1];
 	struct path_s *path;
 
-	cfg_root = kv_string(config, "root", "www");
+	cfg_root = kv_string(global_config, "root", "www");
 	if (*cfg_root == '/')
 	{
 		documentroot = malloc(strlen(cfg_root) + 1);
@@ -689,7 +457,7 @@ main(int argc, const char **argv)
 	signal(SIGTERM, sighandler);
 	signal(SIGSEGV, sighandler);*/
 	signal(SIGCHLD, SIG_IGN);
-	config = config_load("server.conf");
+	global_config = config_load("server.conf");
 
 	setup_document_root();
 

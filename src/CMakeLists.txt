@@ -28,3 +28,5 @@ target_sources(server
         url.c
         options.h
         )
+
+add_subdirectory(serve)

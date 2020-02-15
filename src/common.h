@@ -1,5 +1,4 @@
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 #include <stddef.h> /* size_t */
 #include <string.h>
@@ -55,5 +54,3 @@ substr(const char *str, int start, int length);
 
 typedef char bool;
 typedef int status_t;
-
-#endif /* COMMON_H */

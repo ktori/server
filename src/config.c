@@ -1,10 +1,11 @@
 #include "config.h"
 #include "common.h"
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+struct kv_list_s *global_config = NULL;
 
 static const char *config_loc_cached = NULL;
 

@@ -1,5 +1,4 @@
-#ifndef URL_H
-#define URL_H
+#pragma once
 
 #include "common.h"
 #include "kv.h"
@@ -38,5 +37,3 @@ uri_free(struct uri_s *uri);
 
 struct kv_list_s *
 querystring_make(const char *qs);
-
-#endif /* URL_H */

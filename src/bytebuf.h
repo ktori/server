@@ -1,5 +1,4 @@
-#ifndef BYTEBUF_H
-#define BYTEBUF_H
+#pragma once
 
 /*
 
@@ -38,5 +37,3 @@ void
 bytebuf_append(struct bytebuf_s *buf, char *ptr, size_t len);
 
 */
-
-#endif /* BYTEBUF_H */

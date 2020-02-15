@@ -3,6 +3,7 @@
 #include "path.h"
 #include "server.h"
 #include "url.h"
+#include "config.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -43,12 +44,12 @@ cgi_is_script(struct path_s *path)
 
 	tmp = strmake("loose.%s", path->tail->extension);
 
-	if (kv_int(config, tmp, FALSE) == FALSE)
+	if (kv_int(global_config, tmp, FALSE) == FALSE)
 	{
 		node = path->head;
 		while (node != NULL)
 		{
-			if (STREQ(node->name, kv_string(config, "cgi", "cgi-bin")) == TRUE)
+			if (STREQ(node->name, kv_string(global_config, "cgi", "cgi-bin")) == TRUE)
 			{
 				break;
 			}
@@ -71,7 +72,7 @@ cgi_is_script(struct path_s *path)
 		return FALSE;
 	}
 	tmp = strmake("exec.%s", path->tail->extension);
-	if (statbuf.st_mode & S_IXUSR || (kv_int(config, tmp, FALSE) == TRUE))
+	if (statbuf.st_mode & S_IXUSR || (kv_int(global_config, tmp, FALSE) == TRUE))
 	{
 		if (S_ISREG(statbuf.st_mode))
 		{
@@ -148,7 +149,7 @@ cgi_prepare_environment(struct http_request_s *request,
 	}
 
 	tmp1 = strmake("cgi.%s", script->tail->extension);
-	interp = kv_array(config, tmp1, ' ');
+	interp = kv_array(global_config, tmp1, ' ');
 	free(tmp1);
 
 	i = 0;
@@ -170,77 +171,4 @@ cgi_prepare_environment(struct http_request_s *request,
 	free(path_abs);
 
 	return SUCCESS;
-}
-
-status_t
-serve_cgi(struct http_response_s *response, struct http_request_s *request)
-{
-	struct kv_list_s *env;
-	struct kv_list_s *args;
-	char **env_arr;
-	char **args_arr;
-	char *cmd;
-
-	struct path_s *script;
-	char *script_path;
-	status_t status;
-
-	char *cgi_output;
-	int cgi_output_length;
-
-	char *cgi_input;
-	int cgi_input_length;
-
-	cgi_input = "";
-	cgi_input_length = 0;
-
-	script = request->uri->path;
-
-	if (cgi_is_script(script) != TRUE)
-	{
-		return SKIPPED;
-	}
-	if (cgi_prepare_environment(request, script, &cmd, &env, &args) != SUCCESS)
-	{
-		serve_error(response, HTTP_SERVER_ERROR, "Internal Server Error");
-		return FAILURE;
-	}
-
-	script_path = path_to_string(script, documentroot);
-
-	env_arr = kv_to_env(env);
-	args_arr = kv_to_args(args);
-
-	if (cmd == NULL)
-	{
-		cmd = script_path;
-	}
-
-	status = pexec(cmd,
-				   (const char **) args_arr,
-				   (const char **) env_arr,
-				   cgi_input,
-				   cgi_input_length,
-				   &cgi_output,
-				   &cgi_output_length);
-
-	if (status == SUCCESS)
-	{
-		response->raw = TRUE;
-		response->body = cgi_output;
-		response->length = cgi_output_length;
-	}
-	else
-	{
-		fprintf(stderr, "cgi exec failed: %d\n", status);
-		serve_error(response, HTTP_SERVER_ERROR, "Internal Server Error");
-	}
-
-	kv_free(env);
-	kv_free(args);
-	string_array_free(env_arr);
-	string_array_free(args_arr);
-	free(script_path);
-
-	return status;
 }

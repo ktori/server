@@ -1,5 +1,4 @@
-#ifndef PATH_H
-#define PATH_H
+#pragma once
 
 struct path_node_s
 {
@@ -35,5 +34,3 @@ path_make(const char *path);
 
 char *
 path_to_string(struct path_s *path, const char *root);
-
-#endif /* PATH_H */

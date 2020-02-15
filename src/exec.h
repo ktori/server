@@ -1,5 +1,4 @@
-#ifndef EXEC_H
-#define EXEC_H
+#pragma once
 
 #include "kv.h"
 
@@ -17,5 +16,3 @@ pexec(const char *path,
 	  int input_length,
 	  char **output,
 	  int *output_length);
-
-#endif /* EXEC_H */
