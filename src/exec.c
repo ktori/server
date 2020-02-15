@@ -121,24 +121,6 @@ pexec(const char *path,
 		close(pipes_cp[P_WRITE]);
 		close(pipes_pc[P_READ]);
 
-		int status;
-		do
-		{
-			int w = waitpid(pid, &status, 0);
-			if (w < 0) {
-				perror("waitpid");
-				return EXIT_FAILURE;
-			}
-		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
-
-		fprintf(stderr, "cgi process exited with code %d\n", WEXITSTATUS(status));
-
-		if (WEXITSTATUS(status) != 0) {
-			close(pipes_cp[P_READ]);
-			close(pipes_pc[P_WRITE]);
-			return EXIT_FAILURE;
-		}
-
 		buf = calloc(out_bufsize, 1);
 
 		while (written < input_length)
@@ -168,6 +150,26 @@ pexec(const char *path,
 		/* waitpid(pid, NULL, 0); */
 		*output = buf;
 		*output_length = out;
+
+		int status;
+		do
+		{
+			int w = waitpid(pid, &status, 0);
+			if (w < 0)
+			{
+				perror("waitpid");
+				return EXIT_FAILURE;
+			}
+		}
+		while (!WIFEXITED(status) && !WIFSIGNALED(status));
+
+		fprintf(stderr, "cgi process exited with code %d\n", WEXITSTATUS(status));
+
+		if (WEXITSTATUS(status) != 0)
+		{
+			return EXIT_FAILURE;
+		}
+
 		return SUCCESS;
 	}
 
