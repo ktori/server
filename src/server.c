@@ -20,25 +20,47 @@
 #include "path.h"
 #include "server.h"
 #include "url.h"
+#include <src/options.h>
+
+#if SERVER_USE_SSL
+
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#endif
 
 #define LISTEN_BACKLOG 10
 #define FORK_CLIENTS TRUE
 
 struct kv_list_s *config;
 char *documentroot;
+#if SERVER_USE_SSL
+SSL_CTX *ssl_ctx;
+#endif
 
 /*
  *  TODO Content-Length
  */
+#if SERVER_USE_SSL
+
+int
+recv_http(SSL *ssl, char **buf)
+#else
 int
 recv_http(int sock, char **buf)
+#endif
 {
 	int total = 0, received = 0, size = 128;
 	char *buffer;
 
 	buffer = malloc(size);
 
+#if SERVER_USE_SSL
+	received = SSL_read(ssl, buffer, size - 1);
+#else
 	received = recv(sock, buffer, size - 1, 0);
+#endif
 
 	while (received >= 0)
 	{
@@ -62,7 +84,11 @@ recv_http(int sock, char **buf)
 				buffer = realloc(buffer, size);
 			}
 		}
+#if SERVER_USE_SSL
+		received = SSL_read(ssl, buffer + total, size - total - 1);
+#else
 		received = recv(sock, buffer + total, size - total - 1, 0);
+#endif
 	}
 	free(buffer);
 	return received;
@@ -86,6 +112,24 @@ recv_all(int sock, char *buffer, int length)
 	return total;*/
 }
 
+#if SERVER_USE_SSL
+
+int
+send_all(SSL *ssl, char *buffer, int length)
+{
+	int sent;
+	while (length > 0)
+	{
+		sent = SSL_write(ssl, buffer, length);
+		if (sent < 1)
+			return 1;
+		buffer += sent;
+		length -= sent;
+	}
+	return 0;
+}
+
+#else
 int
 send_all(int sock, char *buffer, int length)
 {
@@ -100,6 +144,7 @@ send_all(int sock, char *buffer, int length)
 	}
 	return 0;
 }
+#endif
 
 int server_socket = -1;
 char server_running = 1;
@@ -156,6 +201,43 @@ get_client_addr(int sockfd, char **addr_out, int *port)
 int
 srv_setup(int *sockfd_out)
 {
+#if SERVER_USE_SSL
+	SSL_load_error_strings();
+	OpenSSL_add_all_algorithms();
+	const SSL_METHOD *method = TLS_server_method();
+	ssl_ctx = SSL_CTX_new(method);
+	if (ssl_ctx == NULL)
+	{
+		perror("unable to create ssl context");
+		ERR_print_errors_fp(stderr);
+		return EXIT_FAILURE;
+	}
+	SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
+
+	const char *cert_path = kv_string(config, "ssl.cert", NULL);
+	if (cert_path == NULL)
+	{
+		fprintf(stderr, "ssl.cert not set\n");
+		return -1;
+	}
+	const char *key_path = kv_string(config, "ssl.key", NULL);
+	if (key_path == NULL)
+	{
+		fprintf(stderr, "ssl.key not set\n");
+		return -1;
+	}
+	if (SSL_CTX_use_certificate_file(ssl_ctx, cert_path, SSL_FILETYPE_PEM) <= 0)
+	{
+		ERR_print_errors_fp(stderr);
+		return -1;
+	}
+	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, key_path, SSL_FILETYPE_PEM) <= 0)
+	{
+		ERR_print_errors_fp(stderr);
+		return -1;
+	}
+#endif
+
 	struct addrinfo hints, *info = 0, *j;
 	int status, sockfd;
 	in_port_t port;
@@ -201,7 +283,7 @@ srv_setup(int *sockfd_out)
 	tv.tv_sec = 8;
 	tv.tv_usec = 0;
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof(tv));
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int));
 	/* fnctl(sockfd, F_SETFL, O_NONBLOCK); */
 
 	listen(sockfd, LISTEN_BACKLOG);
@@ -423,7 +505,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 			{
 				path_pop(request->uri->path);
 				free(uri_path);
-				uri_path = path_to_string(request->uri->path, "./");
+				uri_path = path_to_string(request->uri->path, ".");
 				serve_index(response, uri_path);
 			}
 			else
@@ -457,9 +539,20 @@ srv_process_socket(int sockfd, struct sockaddr_storage *addr)
 	int response_length;
 	int request_length;
 
-	/*    rq_buffer = calloc(8192, 1);
-		request_length = recv_all(sockfd, rq_buffer, 8192);*/
+#if SERVER_USE_SSL
+	SSL *ssl = SSL_new(ssl_ctx);
+	SSL_set_fd(ssl, sockfd);
+	if (SSL_accept(ssl) <= 0)
+	{
+		ERR_print_errors_fp(stderr);
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+		return -1;
+	}
+	request_length = recv_http(ssl, &rq_buffer);
+#else
 	request_length = recv_http(sockfd, &rq_buffer);
+#endif
 
 	if (request_length >= 0)
 	{
@@ -482,7 +575,11 @@ srv_process_socket(int sockfd, struct sockaddr_storage *addr)
 	response_length = http_response_length(response);
 	rs_buffer = calloc(response_length + 2, 1);
 	http_response_to_buffer(response, rs_buffer, response_length + 1);
-	send_all(sockfd, rs_buffer, response_length + 1);
+#if SERVER_USE_SSL
+	send_all(ssl, rs_buffer, response_length);
+#else
+	send_all(sockfd, rs_buffer, response_length);
+#endif
 
 	if (request_length >= 0)
 		free(rq_buffer);
@@ -491,6 +588,11 @@ srv_process_socket(int sockfd, struct sockaddr_storage *addr)
 	http_response_free(response);
 	if (request != NULL)
 		http_request_free(request);
+
+#if SERVER_USE_SSL
+	SSL_shutdown(ssl);
+	SSL_free(ssl);
+#endif
 
 	return 0;
 }
@@ -544,6 +646,10 @@ srv_cleanup()
 	printf("cleaning up\n");
 	shutdown(server_socket, SHUT_RDWR);
 	close(server_socket);
+#if SERVER_USE_SSL
+	SSL_CTX_free(ssl_ctx);
+	EVP_cleanup();
+#endif
 	return 0;
 }
 

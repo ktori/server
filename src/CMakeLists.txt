@@ -26,4 +26,5 @@ target_sources(server
         server.c
         url.h
         url.c
+        options.h
         )

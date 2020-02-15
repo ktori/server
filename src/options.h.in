@@ -1,0 +1,10 @@
+/*
+ * Created by victoria on 15.02.20.
+*/
+
+#ifndef SERVER_OPTIONS_H
+#define SERVER_OPTIONS_H
+
+#cmakedefine01 SERVER_USE_SSL
+
+#endif /* SERVER_OPTIONS_H */
