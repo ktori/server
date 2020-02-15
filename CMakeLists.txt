@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 cmake_policy(SET CMP0076 NEW)
 
 option(SERVER_USE_SSL "Use SSL" ON)
+option(USE_FORKS "Use forks" ON)
 configure_file(src/options.h.in src/options.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 project(server)
