@@ -33,6 +33,11 @@ server_accept(struct server_s *server, struct client_s *client)
 		request = http_request_from_buffer(rq_buffer, request_length);
 		fprintf(rq_log, "--- REQUEST ---\n\n%s\n", rq_buffer);
 		fclose(rq_log);
+		if (request == NULL)
+		{
+			fprintf(stderr, "NULL request");
+			return EXIT_FAILURE;
+		}
 		request->sockfd = client->socket;
 	}
 	else

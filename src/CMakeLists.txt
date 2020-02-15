@@ -32,3 +32,4 @@ target_sources(server
 
 add_subdirectory(serve)
 add_subdirectory(server)
+add_subdirectory(cluster)

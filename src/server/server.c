@@ -18,6 +18,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <sys/ioctl.h>
 
 #endif
 
@@ -35,6 +36,12 @@ static int
 server_setup_ssl(struct server_s *server)
 #if SERVER_USE_SSL
 {
+	if (kv_int(server->config, "ssl", 0) == 0)
+	{
+		server->ssl_ctx = NULL;
+		return EXIT_SUCCESS;
+	}
+
 	SSL_CTX *ssl_ctx = NULL;
 
 	const SSL_METHOD *method = TLS_server_method();
@@ -87,6 +94,8 @@ server_setup_ssl(struct server_s *server)
 int
 server_setup(struct server_s *server, struct kv_list_s *config)
 {
+	server->is_running = 0;
+	server->sock_fd = -1;
 	server->config = config;
 	server_setup_ssl(server);
 
@@ -114,6 +123,14 @@ server_setup(struct server_s *server, struct kv_list_s *config)
 			printf("socket() failed\n");
 			continue;
 		}
+
+		struct timeval tv;
+		tv.tv_sec = 8;
+		tv.tv_usec = 0;
+		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof(tv));
+		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int));
+		ioctl(sockfd, FIONBIO, &(char) {1});
+
 		status = bind(sockfd, j->ai_addr, j->ai_addrlen);
 		if (status == -1)
 		{
@@ -131,16 +148,12 @@ server_setup(struct server_s *server, struct kv_list_s *config)
 	port = ntohs(get_in_port((struct sockaddr *) info->ai_addr));
 	freeaddrinfo(info);
 
-	struct timeval tv;
-	tv.tv_sec = 8;
-	tv.tv_usec = 0;
-	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof(tv));
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int));
 	/* fnctl(sockfd, F_SETFL, O_NONBLOCK); */
 
 	listen(sockfd, LISTEN_BACKLOG);
 
 	server->sock_fd = sockfd;
+	server->is_running = 1;
 
 	printf("server (%d) is listening on port %hd\n", server->sock_fd, port);
 

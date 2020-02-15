@@ -6,6 +6,7 @@
 #include "config.h"
 #include "server/server.h"
 #include "server.h"
+#include "cluster/cluster.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <src/options.h>
@@ -45,6 +46,14 @@ main(int argc, const char **argv)
 	setup_document_root();
 
 	struct server_s server;
+	struct server_s server_ssl;
+	struct cluster_s cluster;
+
+	if (cluster_init(&cluster) != EXIT_SUCCESS)
+	{
+		perror("cluster_init()");
+		return EXIT_FAILURE;
+	}
 
 #if SERVER_USE_SSL
 	if (ssl_setup() != EXIT_SUCCESS)
@@ -54,16 +63,33 @@ main(int argc, const char **argv)
 #endif
 	if (server_setup(&server, global_config) != EXIT_SUCCESS)
 	{
-		fprintf(stderr, "srv_setup failed\n");
-		return 1;
+		perror("server_setup()");
+		return EXIT_FAILURE;
 	}
-	if (server_listen(&server) != EXIT_SUCCESS)
+	if (cluster_add(&cluster, &server) != EXIT_SUCCESS)
 	{
-		fprintf(stderr, "srv_listen failed\n");
+		perror("cluster_add()");
+		return EXIT_FAILURE;
 	}
-	if (server_cleanup(&server) != EXIT_SUCCESS)
+	if (server_setup(&server_ssl, config_load("server-ssl.conf")) != EXIT_SUCCESS)
 	{
-		fprintf(stderr, "srv_cleanup failed\n");
+		perror("server_setup()");
+		return EXIT_FAILURE;
+	}
+	if (cluster_add(&cluster, &server_ssl) != EXIT_SUCCESS)
+	{
+		perror("cluster_add()");
+		return EXIT_FAILURE;
+	}
+	if (cluster_run(&cluster) != EXIT_SUCCESS)
+	{
+		perror("cluster_run()");
+		return EXIT_FAILURE;
+	}
+	if (cluster_destroy(&cluster) != EXIT_SUCCESS)
+	{
+		perror("cluster_destroy()");
+		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
