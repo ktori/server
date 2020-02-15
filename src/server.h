@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "lib/str.h"
 #include "lib/http.h"
 #include "lib/kv.h"
 

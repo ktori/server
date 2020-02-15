@@ -4,17 +4,17 @@
 
 struct route_node_s *route_head = NULL;
 
-status_t
+int
 route(struct http_request_s *request, struct http_response_s *response)
 {
 	struct route_node_s *current;
-	status_t status;
+	int status;
 
 	current = route_head;
 	while (current != NULL)
 	{
 		status = current->callback(request, response);
-		if (status != SKIPPED)
+		if (status != -2)
 		{
 			return status;
 		}

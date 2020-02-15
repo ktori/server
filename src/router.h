@@ -1,12 +1,12 @@
 #pragma once
 
-#include "common.h"
+#include "lib/str.h"
 #include "lib/http.h"
 
 typedef enum http_status (*server_fn)(struct http_request_s *,
 									  struct http_response_s *);
 
-status_t
+int
 route(struct http_request_s *request, struct http_response_s *response);
 
 struct route_node_s

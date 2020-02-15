@@ -52,5 +52,5 @@ serve_file(struct http_response_s *response, const char *filename, char noerr)
 	response->length = length;
 	kv_push(response->headers, "Content-Type", mimetype(filename));
 	printf("Served file %s with length %d\n", filename, length);
-	return SUCCESS;
+	return EXIT_SUCCESS;
 }

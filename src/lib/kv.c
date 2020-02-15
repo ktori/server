@@ -1,5 +1,5 @@
 #include "kv.h"
-#include "../common.h"
+#include "str.h"
 
 #include <ctype.h>
 #include <stdio.h>

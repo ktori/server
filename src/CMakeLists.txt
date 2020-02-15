@@ -2,8 +2,6 @@ target_sources(server
         PRIVATE
         cgi.h
         cgi.c
-        common.h
-        common.c
         exec.h
         exec.c
         router.h

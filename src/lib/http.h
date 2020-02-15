@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common.h"
+#include "str.h"
 #include "kv.h"
 
 #define HTTP_URI_MAX_LENGTH 2048

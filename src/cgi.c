@@ -67,7 +67,7 @@ cgi_is_script(struct path_s *path)
 	status = stat(tmp, &statbuf);
 	free(tmp);
 
-	if (status != SUCCESS)
+	if (status != EXIT_SUCCESS)
 	{
 		return FALSE;
 	}
@@ -82,7 +82,7 @@ cgi_is_script(struct path_s *path)
 	return FALSE;
 }
 
-status_t
+int
 cgi_prepare_environment(struct http_request_s *request,
 						struct path_s *script,
 						char **cmd,
@@ -103,9 +103,9 @@ cgi_prepare_environment(struct http_request_s *request,
 
 	char *tmp1, *tmp2;
 
-	if (get_client_addr(request->sockfd, &addr, &port) != SUCCESS)
+	if (get_client_addr(request->sockfd, &addr, &port) != EXIT_SUCCESS)
 	{
-		return FAILURE;
+		return EXIT_FAILURE;
 	}
 	snprintf(port_s, 16, "%d", port);
 
@@ -170,5 +170,5 @@ cgi_prepare_environment(struct http_request_s *request,
 	free(path_rel);
 	free(path_abs);
 
-	return SUCCESS;
+	return EXIT_SUCCESS;
 }

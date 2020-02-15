@@ -1,11 +1,11 @@
 #pragma once
 
-#include "common.h"
+#include "lib/str.h"
 #include "lib/http.h"
 #include "lib/kv.h"
 #include "lib/path.h"
 
-status_t
+int
 cgi_prepare_environment(struct http_request_s *request,
 						struct path_s *script,
 						char **cmd,

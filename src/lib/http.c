@@ -153,7 +153,7 @@ http_response_to_buffer(struct http_response_s *response,
 	total += size;
 
 	if (size == length)
-		return FAILURE;
+		return EXIT_FAILURE;
 
 	if (response->raw != TRUE)
 	{
@@ -162,7 +162,7 @@ http_response_to_buffer(struct http_response_s *response,
 		{
 			size = strlen(iter->key) + 2 + strlen(iter->value) + 2;
 			if (total + size + 1 > length)
-				return FAILURE;
+				return EXIT_FAILURE;
 			sprintf(buffer, "%s: %s\r\n", iter->key, iter->value);
 			total += size;
 			buffer += size;
@@ -170,7 +170,7 @@ http_response_to_buffer(struct http_response_s *response,
 		}
 
 		if (total + response->length + 3 > length)
-			return FAILURE;
+			return EXIT_FAILURE;
 
 		sprintf(buffer, "\r\n");
 		buffer += 2;

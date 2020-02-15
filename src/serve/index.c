@@ -56,7 +56,7 @@ serve_index(struct http_response_s *response, const char *folder)
 		tmp_name = path_to_string(path, "");
 		tmp_realname = path_to_string(path, documentroot);
 		printf("file: %s %s\n", tmp_realname, tmp_name);
-		if (stat(tmp_realname, &filestat) == SUCCESS)
+		if (stat(tmp_realname, &filestat) == EXIT_SUCCESS)
 		{
 			len = snprintf(body + total,
 						   1024 * 16 - total,

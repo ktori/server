@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 int
 serve_cgi(struct http_response_s *response, struct http_request_s *request)
@@ -38,12 +39,12 @@ serve_cgi(struct http_response_s *response, struct http_request_s *request)
 
 	if (cgi_is_script(script) != TRUE)
 	{
-		return SKIPPED;
+		return -2;
 	}
-	if (cgi_prepare_environment(request, script, &cmd, &env, &args) != SUCCESS)
+	if (cgi_prepare_environment(request, script, &cmd, &env, &args) != EXIT_SUCCESS)
 	{
 		serve_error(response, HTTP_SERVER_ERROR, "Internal Server Error");
-		return FAILURE;
+		return EXIT_FAILURE;
 	}
 
 	script_path = path_to_string(script, documentroot);
@@ -64,7 +65,7 @@ serve_cgi(struct http_response_s *response, struct http_request_s *request)
 				   &cgi_output,
 				   &cgi_output_length);
 
-	if (status == SUCCESS)
+	if (status == EXIT_SUCCESS)
 	{
 		response->raw = TRUE;
 		response->body = cgi_output;

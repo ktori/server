@@ -1,4 +1,4 @@
-#include "../common.h"
+#include "str.h"
 #include "config.h"
 #include "kv.h"
 

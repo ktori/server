@@ -36,7 +36,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 		request->uri == NULL || request->uri->path == NULL)
 	{
 		serve_error(response, 400, "Bad Request");
-		return FAILURE;
+		return EXIT_FAILURE;
 	}
 
 	/*    printf("%s %s HTTP %d.%d\n", request->method, request->uri->complete,
@@ -56,7 +56,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 	uri_path = path_to_string(request->uri->path, documentroot);
 	printf("Requested URI = %s\n", uri_path);
 
-	if (serve_cgi(response, request) == SKIPPED)
+	if (serve_cgi(response, request) == -2)
 	{
 		stat(uri_path, &buf);
 		if (S_ISDIR(buf.st_mode))
@@ -64,7 +64,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 			free(uri_path);
 			path_push(request->uri->path, kv_string(global_config, "index", "index.html"));
 			uri_path = path_to_string(request->uri->path, documentroot);
-			if (stat(uri_path, &buf) != SUCCESS)
+			if (stat(uri_path, &buf) != EXIT_SUCCESS)
 			{
 				path_pop(request->uri->path);
 				free(uri_path);

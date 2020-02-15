@@ -34,9 +34,9 @@ get_client_addr(int sockfd, char **addr_out, int *port)
 
 	addrlen = sizeof(addr);
 
-	if (getpeername(sockfd, (struct sockaddr *) &addr, &addrlen) != SUCCESS)
+	if (getpeername(sockfd, (struct sockaddr *) &addr, &addrlen) != EXIT_SUCCESS)
 	{
-		return FAILURE;
+		return EXIT_FAILURE;
 	}
 	addr_s = malloc(64);
 	if (addr.ss_family == AF_INET)
@@ -52,7 +52,7 @@ get_client_addr(int sockfd, char **addr_out, int *port)
 
 	*addr_out = addr_s;
 
-	return SUCCESS;
+	return EXIT_SUCCESS;
 }
 
 void

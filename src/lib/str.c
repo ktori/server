@@ -1,12 +1,12 @@
-#include "common.h"
+#include "str.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-char
-chtohex(char c)
+int
+chtohex(int c)
 {
 	if (c >= '0' && c <= '9')
 		return c - '0';
@@ -19,8 +19,8 @@ chtohex(char c)
 
 const char *hex_table = "0123456789ABCDEF";
 
-char
-hextoch(char h)
+int
+hextoch(int h)
 {
 	return (h >= 0 && h < 16) ? hex_table[(int) h] : '0';
 }
@@ -36,7 +36,8 @@ stricmp(const char *s1, const char *s2)
 int
 fmtlen(const char *fmt, ...)
 {
-	int size, current;
+	size_t size;
+	int current;
 	char *buffer;
 
 	va_list list;
@@ -130,7 +131,8 @@ string_array_free(char **array)
 char *
 strmake(const char *fmt, ...)
 {
-	int size, current;
+	size_t size;
+	int current;
 	char *buffer;
 
 	va_list list;

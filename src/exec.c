@@ -1,5 +1,5 @@
 #include "exec.h"
-#include "common.h"
+#include "lib/str.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,7 +170,7 @@ pexec(const char *path,
 			return EXIT_FAILURE;
 		}
 
-		return SUCCESS;
+		return EXIT_SUCCESS;
 	}
 
 	return -3;

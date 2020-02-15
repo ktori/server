@@ -9,6 +9,7 @@
 #include "../lib/config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 void
 serve_error(struct http_response_s *response, int error, const char *detail)
@@ -21,7 +22,7 @@ serve_error(struct http_response_s *response, int error, const char *detail)
 	if (kv_isset(global_config, errcfg) == TRUE)
 	{
 		if (serve_file(response, kv_string(global_config, errcfg, "error.html"), TRUE) ==
-			SUCCESS)
+			EXIT_SUCCESS)
 		{
 			return;
 		}

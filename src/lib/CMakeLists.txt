@@ -3,6 +3,8 @@ target_sources(server
 
         bytebuf.c
         bytebuf.h
+        str.c
+        str.h
         config.c
         config.h
         crlf.c

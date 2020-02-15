@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common.h"
+#include "str.h"
 
 struct crlf_marker_s
 {

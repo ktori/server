@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common.h"
+#include "str.h"
 #include "kv.h"
 #include "path.h"
 
