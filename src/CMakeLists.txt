@@ -27,6 +27,9 @@ target_sources(server
         url.h
         url.c
         options.h
+        main.c
         )
 
 add_subdirectory(serve)
+add_subdirectory(server)
+add_subdirectory(cluster)
