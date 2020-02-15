@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common.h"
-#include "http.h"
-#include "kv.h"
-#include "path.h"
+#include "lib/http.h"
+#include "lib/kv.h"
+#include "lib/path.h"
 
 status_t
 cgi_prepare_environment(struct http_request_s *request,

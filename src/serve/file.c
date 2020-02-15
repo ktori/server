@@ -3,8 +3,8 @@
 */
 
 #include "error.h"
-#include "../http.h"
-#include "../mime.h"
+#include "../lib/http.h"
+#include "../lib/mime.h"
 
 #include <stddef.h>
 #include <stdlib.h>

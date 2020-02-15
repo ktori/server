@@ -14,14 +14,14 @@
 #include <unistd.h>
 
 #include "cgi.h"
-#include "config.h"
-#include "http.h"
-#include "mime.h"
-#include "path.h"
+#include "lib/config.h"
+#include "lib/http.h"
+#include "lib/mime.h"
+#include "lib/path.h"
 #include "server.h"
-#include "url.h"
+#include "lib/url.h"
 #include "serve/serve.h"
-#include <src/options.h>
+#include <conf/config.h>
 
 char *documentroot;
 

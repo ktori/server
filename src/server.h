@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common.h"
-#include "http.h"
-#include "kv.h"
+#include "lib/http.h"
+#include "lib/kv.h"
 
 extern char *documentroot;
 

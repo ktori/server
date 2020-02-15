@@ -3,10 +3,10 @@
 */
 
 #include "string.h"
-#include "../kv.h"
-#include "../http.h"
+#include "../lib/kv.h"
+#include "../lib/http.h"
 #include "file.h"
-#include "../config.h"
+#include "../lib/config.h"
 
 #include <stdio.h>
 

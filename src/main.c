@@ -3,13 +3,13 @@
 */
 
 #include <signal.h>
-#include "config.h"
+#include "lib/config.h"
 #include "server/server.h"
 #include "server.h"
 #include "cluster/cluster.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <src/options.h>
+#include <conf/config.h>
 
 #if SERVER_USE_SSL
 #include <openssl/ssl.h>

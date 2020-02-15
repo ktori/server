@@ -3,9 +3,9 @@
 */
 
 #include "index.h"
-#include "../http.h"
+#include "../lib/http.h"
 #include "error.h"
-#include "../path.h"
+#include "../lib/path.h"
 #include "../server.h"
 
 #include <stdlib.h>

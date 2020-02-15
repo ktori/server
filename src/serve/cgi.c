@@ -4,7 +4,7 @@
 
 #include "cgi.h"
 #include "../cgi.h"
-#include "../url.h"
+#include "../lib/url.h"
 #include "error.h"
 #include "../exec.h"
 #include "../server.h"

@@ -2,8 +2,8 @@
  * Created by victoria on 15.02.20.
 */
 
-#include "../kv.h"
-#include "../http.h"
+#include "../lib/kv.h"
+#include "../lib/http.h"
 
 #include <string.h>
 #include <stdlib.h>

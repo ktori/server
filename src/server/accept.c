@@ -4,7 +4,7 @@
 
 #include "server.h"
 #include "client.h"
-#include "../http.h"
+#include "../lib/http.h"
 #include "../serve/serve.h"
 
 #include <stdio.h>
@@ -29,16 +29,14 @@ server_accept(struct server_s *server, struct client_s *client)
 
 	if (request_length >= 0)
 	{
-		rq_log = fopen("requests.log", "a");
 		request = http_request_from_buffer(rq_buffer, request_length);
-		fprintf(rq_log, "--- REQUEST ---\n\n%s\n", rq_buffer);
-		fclose(rq_log);
-		if (request == NULL)
+		if (request != NULL)
 		{
-			fprintf(stderr, "NULL request");
-			return EXIT_FAILURE;
+			rq_log = fopen("requests.log", "a");
+			fprintf(rq_log, "--- REQUEST ---\n\n%s\n", rq_buffer);
+			fclose(rq_log);
+			request->sockfd = client->socket;
 		}
-		request->sockfd = client->socket;
 	}
 	else
 	{

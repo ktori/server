@@ -3,7 +3,7 @@
 */
 #pragma once
 
-#include <src/options.h>
+#include <conf/config.h>
 
 #include <sys/socket.h>
 

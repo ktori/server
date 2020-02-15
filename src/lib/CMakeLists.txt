@@ -1,0 +1,20 @@
+target_sources(server
+        PRIVATE
+
+        bytebuf.c
+        bytebuf.h
+        config.c
+        config.h
+        crlf.c
+        crlf.h
+        http.c
+        http.h
+        kv.c
+        kv.h
+        mime.c
+        mime.h
+        path.c
+        path.h
+        url.c
+        url.h
+        )

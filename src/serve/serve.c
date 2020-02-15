@@ -3,16 +3,16 @@
 */
 
 #include "serve.h"
-#include "../kv.h"
+#include "../lib/kv.h"
 #include "file.h"
 #include "index.h"
-#include "../path.h"
-#include "../config.h"
-#include "../http.h"
+#include "../lib/path.h"
+#include "../lib/config.h"
+#include "../lib/http.h"
 #include "error.h"
 #include "../server.h"
 #include "cgi.h"
-#include "../url.h"
+#include "../lib/url.h"
 
 #include <stdlib.h>
 #include <stdio.h>

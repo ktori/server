@@ -1,31 +1,15 @@
 target_sources(server
         PRIVATE
-        bytebuf.h
-        bytebuf.c
         cgi.h
         cgi.c
         common.h
         common.c
-        config.h
-        config.c
-        crlf.h
-        crlf.c
         exec.h
         exec.c
-        http.h
-        http.c
-        kv.h
-        kv.c
-        mime.h
-        mime.c
-        path.h
-        path.c
         router.h
         router.c
         server.h
         server.c
-        url.h
-        url.c
         options.h
         main.c
         )
@@ -33,3 +17,4 @@ target_sources(server
 add_subdirectory(serve)
 add_subdirectory(server)
 add_subdirectory(cluster)
+add_subdirectory(lib)

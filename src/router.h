@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "http.h"
+#include "lib/http.h"
 
 typedef enum http_status (*server_fn)(struct http_request_s *,
 									  struct http_response_s *);

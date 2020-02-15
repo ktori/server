@@ -1,9 +1,9 @@
 #include "exec.h"
-#include "kv.h"
-#include "path.h"
+#include "lib/kv.h"
+#include "lib/path.h"
 #include "server.h"
-#include "url.h"
-#include "config.h"
+#include "lib/url.h"
+#include "lib/config.h"
 
 #include <ctype.h>
 #include <stdio.h>

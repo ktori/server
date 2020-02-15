@@ -2,8 +2,8 @@
  * Created by victoria on 15.02.20.
 */
 #include "server.h"
-#include "../kv.h"
-#include <src/options.h>
+#include "../lib/kv.h"
+#include <conf/config.h>
 
 #include <stdlib.h>
 #include <sys/socket.h>

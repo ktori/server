@@ -18,6 +18,7 @@
 int
 client_accept(struct server_s *server, struct client_s *client)
 {
+	client->ssl = NULL;
 	client->addr_size = sizeof(client->addr);
 	client->socket =
 			accept(server->sock_fd, (struct sockaddr *) &client->addr, &client->addr_size);
@@ -41,6 +42,7 @@ client_setup(struct server_s *server, struct client_s *client)
 		SSL_set_fd(ssl, client->socket);
 		if (SSL_accept(ssl) <= 0)
 		{
+			client->ssl = NULL;
 			ERR_print_errors_fp(stderr);
 			SSL_shutdown(ssl);
 			SSL_free(ssl);
