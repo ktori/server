@@ -14,6 +14,7 @@
 #include "cgi.h"
 #include "../lib/url.h"
 #include "../http/request.h"
+#include "../http/response.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,7 +24,6 @@
 int
 serve(struct http_request_s *request, struct http_response_s *response)
 {
-	char clength[16];
 	char *uri_path;
 	struct stat buf;
 
@@ -31,7 +31,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 
 	response->version_major = 1;
 	response->version_minor = 1;
-	response->code = 200;
+	response->status = HTTP_S_OK;
 
 	if (request == NULL || request->method != HTTP_METHOD_GET ||
 		request->uri == NULL || request->uri->path == NULL)
@@ -84,10 +84,6 @@ serve(struct http_request_s *request, struct http_response_s *response)
 	}
 
 	free(uri_path);
-
-	snprintf(clength, 15, "%zu", response->length);
-	kv_push(response->headers, "Content-Length", clength);
-	kv_push(response->headers, "Server", "server.c");
 
 	return EXIT_SUCCESS;
 }

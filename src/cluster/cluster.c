@@ -78,6 +78,7 @@ cluster_run(struct cluster_s *cluster)
 						perror("client_accept()");
 					break;
 				}
+				printf("client connected: %d\n", client.socket);
 #if USE_FORKS
 				if (fork() == 0)
 				{
@@ -112,6 +113,7 @@ cluster_run(struct cluster_s *cluster)
 					client_close(&client);
 					break;
 				}
+				printf("done serving client: %d\n", client.socket);
 				client_close(&client);
 #endif
 			}

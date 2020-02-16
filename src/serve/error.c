@@ -7,6 +7,7 @@
 #include "../lib/http.h"
 #include "file.h"
 #include "../lib/config.h"
+#include "../http/response.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +18,7 @@ serve_error(struct http_response_s *response, int error, const char *detail)
 	char errcfg[32];
 	snprintf(errcfg, 32, "err.%d", error);
 
-	response->code = error;
+	response->status = error;
 
 	if (kv_isset(global_config, errcfg) == TRUE)
 	{

@@ -3,7 +3,8 @@
 */
 #pragma once
 
+enum http_status;
 struct http_request_s;
 
 int
-headers_read(struct http_request_s *request);
+headers_read(struct http_request_s *request, enum http_status *out_status);

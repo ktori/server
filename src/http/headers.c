@@ -2,13 +2,15 @@
  * Created by victoria on 16.02.20.
 */
 
+#include <errno.h>
 #include "request.h"
 #include "../def.h"
 #include "../lib/kv.h"
 #include "../server/client.h"
+#include "status.h"
 
 int
-headers_read(struct http_request_s *request)
+headers_read(struct http_request_s *request, enum http_status *out_status)
 {
 	struct bytebuf_s *buf = &request->read_buffer;
 
@@ -40,7 +42,18 @@ headers_read(struct http_request_s *request)
 			bytebuf_ensure_write(buf, 256);
 			if (client_read_some(request->client, bytebuf_write_ptr(buf), bytebuf_write_size(buf), &out_read) !=
 				EXIT_SUCCESS)
+			{
+				if (errno == EAGAIN)
+					*out_status = HTTP_S_REQUEST_TIMEOUT;
+				else
+					*out_status = HTTP_S_BAD_REQUEST;
 				return EXIT_FAILURE;
+			}
+			if (out_read == 0)
+			{
+				*out_status = HTTP_S_BAD_REQUEST;
+				return EXIT_FAILURE;
+			}
 			buf->pos_write += out_read;
 		}
 
@@ -78,7 +91,10 @@ headers_read(struct http_request_s *request)
 				break;
 			case H_FIELD_SEP:
 				if (*current != ':')
+				{
+					*out_status = HTTP_S_BAD_REQUEST;
 					current_state = H_ERROR;
+				}
 				else
 				{
 					current_state = H_FIELD_SEP_OWS;
@@ -99,6 +115,12 @@ headers_read(struct http_request_s *request)
 			case H_FIELD_VALUE:
 				if (crlf)
 				{
+					if (buf->pos_read - 1 <= value_begin)
+					{
+						*out_status = HTTP_S_BAD_REQUEST;
+						current_state = H_ERROR;
+						break;
+					}
 					kv_push_n(request->headers, buf->data + name_begin, name_end - name_begin, buf->data + value_begin,
 							  buf->pos_read - value_begin - 2);
 					current_state = H_FIELD_VALUE_NEXT;

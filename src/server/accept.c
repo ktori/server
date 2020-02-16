@@ -7,23 +7,47 @@
 #include "../lib/http.h"
 #include "../serve/serve.h"
 #include "../http/request.h"
+#include "../http/status.h"
+#include "../http/response.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-int
-server_accept(struct server_s *server, struct client_s *client)
+static int
+server_make_response(struct client_s *client, struct http_response_s *response)
 {
-	struct http_response_s *response;
-	struct http_request_s request = {};
-	char *rs_buffer;
-	int response_length;
+	struct http_request_s request = {0};
 
-	if (http_request_read(client, &request) != EXIT_SUCCESS)
+	if (http_request_read(client, &request, &response->status) != EXIT_SUCCESS)
 	{
 		perror("reading request");
 		http_request_free(&request);
 		return EXIT_FAILURE;
+	}
+
+	serve(&request, response);
+	http_request_free(&request);
+
+	return EXIT_SUCCESS;
+}
+
+int
+server_accept(struct server_s *server, struct client_s *client)
+{
+	struct http_response_s response = {.version_major = 1, .version_minor = 1, 0};
+	int exit_status;
+
+	response.headers = kv_create();
+	kv_push(response.headers, "Server", "server.c");
+	kv_push(response.headers, "Connection", "close");
+
+	exit_status = server_make_response(client, &response);
+
+	if (response.body != NULL)
+	{
+		char content_length[16];
+		snprintf(content_length, 15, "%zu", response.length);
+		kv_push(response.headers, "Content-Length", content_length);
 	}
 
 	/*
@@ -32,21 +56,10 @@ server_accept(struct server_s *server, struct client_s *client)
 	fclose(rq_log);
 	 */
 
-	response = calloc(1, sizeof(struct http_response_s));
-	response->headers = kv_create();
+	if (http_response_write(&response, client) != EXIT_SUCCESS)
+		exit_status = EXIT_FAILURE;
 
-	serve(&request, response);
+	http_response_free(&response);
 
-	response_length = http_response_length(response);
-	rs_buffer = calloc(response_length + 2, 1);
-	http_response_to_buffer(response, rs_buffer, response_length + 1);
-
-	client_write(client, rs_buffer, response_length);
-
-	free(rs_buffer);
-
-	http_response_free(response);
-	http_request_free(&request);
-
-	return 0;
+	return exit_status;
 }

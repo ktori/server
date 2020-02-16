@@ -4,6 +4,7 @@
 
 #include "server.h"
 #include "client.h"
+#include "../def.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,6 +30,8 @@ client_accept(struct server_s *server, struct client_s *client)
 			perror("accept()");
 		return EXIT_FAILURE;
 	}
+
+	client->eof = FALSE;
 
 	return EXIT_SUCCESS;
 }
@@ -63,6 +66,9 @@ client_read_some(struct client_s *client, char *out, size_t buffer_size, size_t 
 {
 	int received;
 
+	if (client->eof)
+		return EXIT_FAILURE;
+
 #if SERVER_USE_SSL
 	if (client->ssl)
 		received = SSL_read(client->ssl, out, buffer_size);
@@ -76,6 +82,10 @@ client_read_some(struct client_s *client, char *out, size_t buffer_size, size_t 
 	{
 		perror("read error");
 		return EXIT_FAILURE;
+	}
+	if (received == 0)
+	{
+		client->eof = TRUE;
 	}
 
 	*out_length = received;
@@ -129,6 +139,9 @@ client_read(struct client_s *client, char **out, size_t *out_length)
 int
 client_write(struct client_s *client, const char *data, size_t length)
 {
+	if (client->eof)
+		return EXIT_FAILURE;
+
 	int sent;
 	while (length > 0)
 	{

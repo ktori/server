@@ -18,6 +18,7 @@ struct server_s;
 struct client_s
 {
 	int socket;
+	int eof;
 	struct sockaddr_storage addr;
 	socklen_t addr_size;
 #if SERVER_USE_SSL

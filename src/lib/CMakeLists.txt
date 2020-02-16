@@ -9,7 +9,6 @@ target_sources(server
         config.h
         crlf.c
         crlf.h
-        http.c
         http.h
         kv.c
         kv.h

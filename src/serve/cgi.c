@@ -9,6 +9,7 @@
 #include "../exec.h"
 #include "../server.h"
 #include "../http/request.h"
+#include "../http/response.h"
 
 #include <stdio.h>
 #include <malloc.h>
@@ -44,7 +45,7 @@ serve_cgi(struct http_response_s *response, struct http_request_s *request)
 	}
 	if (cgi_prepare_environment(request, script, &cmd, &env, &args) != EXIT_SUCCESS)
 	{
-		serve_error(response, HTTP_SERVER_ERROR, "Internal Server Error");
+		serve_error(response, HTTP_S_SERVER_ERROR, "Internal Server Error");
 		return EXIT_FAILURE;
 	}
 
@@ -75,7 +76,7 @@ serve_cgi(struct http_response_s *response, struct http_request_s *request)
 	else
 	{
 		fprintf(stderr, "cgi exec failed: %d\n", status);
-		serve_error(response, HTTP_SERVER_ERROR, "Internal Server Error");
+		serve_error(response, HTTP_S_SERVER_ERROR, "Internal Server Error");
 	}
 
 	kv_free(env);

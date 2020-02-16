@@ -16,6 +16,7 @@
 #include "../lib/bytebuf.h"
 #include "request_line.h"
 #include "headers.h"
+#include "status.h"
 
 struct http_request_s *
 http_request_from_buffer(const char *buffer, size_t length)
@@ -270,19 +271,23 @@ http_request_read_headers(struct http_request_s *request)
 */
 
 int
-http_request_read(struct client_s *client, struct http_request_s *request)
+http_request_read(struct client_s *client, struct http_request_s *request, enum http_status *out_status)
 {
 	memset(request, 0, sizeof(struct http_request_s));
 	request->client = client;
 	if (bytebuf_init(&request->read_buffer, 256) != EXIT_SUCCESS)
+	{
+		*out_status = HTTP_S_SERVER_ERROR;
 		return EXIT_FAILURE;
+	}
+
 	request->headers = kv_create();
 
 	/* read request-line */
-	if (request_line_read(request) != EXIT_SUCCESS)
+	if (request_line_read(request, out_status) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	/* read headers */
-	if (headers_read(request) != EXIT_SUCCESS)
+	if (headers_read(request, out_status) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	/* read body TODO */
 

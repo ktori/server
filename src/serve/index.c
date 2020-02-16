@@ -7,6 +7,7 @@
 #include "error.h"
 #include "../lib/path.h"
 #include "../server.h"
+#include "../http/response.h"
 
 #include <stdlib.h>
 #include <dirent.h>

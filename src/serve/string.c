@@ -4,6 +4,7 @@
 
 #include "../lib/kv.h"
 #include "../lib/http.h"
+#include "../http/response.h"
 
 #include <string.h>
 #include <stdlib.h>

@@ -6,4 +6,8 @@ target_sources(server
         headers.h
         request_line.c
         request_line.h
+        response.h
+        response.c
+        status.h
+        status.c
         )

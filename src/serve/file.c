@@ -5,6 +5,7 @@
 #include "error.h"
 #include "../lib/http.h"
 #include "../lib/mime.h"
+#include "../http/response.h"
 
 #include <stddef.h>
 #include <stdlib.h>

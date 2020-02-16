@@ -5,6 +5,8 @@
 
 #include "../lib/bytebuf.h"
 
+enum http_status;
+
 enum http_method
 {
 	HTTP_METHOD_UNKNOWN,
@@ -39,7 +41,7 @@ struct http_request_s *
 http_request_from_buffer(const char *buffer, unsigned long length);
 
 int
-http_request_read(struct client_s *client, struct http_request_s *request);
+http_request_read(struct client_s *client, struct http_request_s *request, enum http_status *out_status);
 
 void
 http_request_free(struct http_request_s *request);
