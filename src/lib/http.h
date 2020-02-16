@@ -19,26 +19,6 @@ enum http_status
 	HTTP_NOT_IMPLEMENTED = 501
 };
 
-struct http_request_s
-{
-	int sockfd;
-	char method[16];
-	int version_major;
-	int version_minor;
-
-	char *body;
-	int length;
-
-	struct uri_s *uri;
-	struct kv_list_s *headers;
-};
-
-struct http_request_s *
-http_request_from_buffer(const char *buffer, size_t length);
-
-void
-http_request_free(struct http_request_s *request);
-
 struct http_response_s
 {
 	int code;

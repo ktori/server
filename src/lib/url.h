@@ -30,7 +30,7 @@ struct uri_s
 };
 
 struct uri_s *
-uri_make(const char *uri);
+uri_make(const char *uri, size_t length);
 
 void
 uri_free(struct uri_s *uri);

@@ -58,13 +58,37 @@ client_setup(struct server_s *server, struct client_s *client)
 	return EXIT_SUCCESS;
 }
 
+int
+client_read_some(struct client_s *client, char *out, size_t buffer_size, size_t *out_length)
+{
+	int received;
+
+#if SERVER_USE_SSL
+	if (client->ssl)
+		received = SSL_read(client->ssl, out, buffer_size);
+	else
+		received = read(client->socket, out, buffer_size);
+#else
+	received = read(client->socket, out, buffer_size);
+#endif
+
+	if (received < 0)
+	{
+		perror("read error");
+		return EXIT_FAILURE;
+	}
+
+	*out_length = received;
+	return EXIT_SUCCESS;
+}
+
 /*
  *  TODO Content-Length
  */
 int
 client_read(struct client_s *client, char **out, size_t *out_length)
 {
-	int received = 0;
+	size_t received;
 	char *buffer;
 	size_t total = 0;
 	size_t size = 128;
@@ -73,18 +97,8 @@ client_read(struct client_s *client, char **out, size_t *out_length)
 
 	do
 	{
-#if SERVER_USE_SSL
-		if (client->ssl)
-			received = SSL_read(client->ssl, buffer + total, (int)(size - total - 1));
-		else
-			received = read(client->socket, buffer + total, (int)(size - total - 1));
-#else
-		received = read(client->socket, buffer + total, (int) (size - total - 1));
-#endif
-
-		if (received < 0)
+		if (client_read_some(client, buffer + total, size - total - 1, &received) != EXIT_SUCCESS)
 		{
-			perror("read error");
 			free(buffer);
 			return EXIT_FAILURE;
 		}
@@ -109,11 +123,7 @@ client_read(struct client_s *client, char **out, size_t *out_length)
 			return EXIT_SUCCESS;
 		}
 	}
-	while (received > 0);
-
-	free(buffer);
-
-	return EXIT_SUCCESS;
+	while (1);
 }
 
 int

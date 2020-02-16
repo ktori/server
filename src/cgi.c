@@ -4,6 +4,8 @@
 #include "server.h"
 #include "lib/url.h"
 #include "lib/config.h"
+#include "http/request.h"
+#include "server/client.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -103,7 +105,7 @@ cgi_prepare_environment(struct http_request_s *request,
 
 	char *tmp1, *tmp2;
 
-	if (get_client_addr(request->sockfd, &addr, &port) != EXIT_SUCCESS)
+	if (get_client_addr(request->client->socket, &addr, &port) != EXIT_SUCCESS)
 	{
 		return EXIT_FAILURE;
 	}
@@ -122,7 +124,9 @@ cgi_prepare_environment(struct http_request_s *request,
 	/* kv_push("REMOTE_HOST", ""); */
 	kv_push(env, "REMOTE_PORT", port_s);
 	/* kv_push("REMOTE_USER", ""); */
-	kv_push(env, "REQUEST_METHOD", request->method);
+	const char *method = http_request_method_name(request);
+	if (method != NULL)
+		kv_push(env, "REQUEST_METHOD", method);
 	if (request->uri->scheme != NULL)
 		kv_push(env, "REQUEST_SCHEME", request->uri->scheme);
 	if (request->uri->spath != NULL)

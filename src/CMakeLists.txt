@@ -4,8 +4,8 @@ target_sources(server
         cgi.c
         exec.h
         exec.c
-        router.h
-        router.c
+        router/router.h
+        router/router.c
         server.h
         server.c
         options.h
@@ -16,3 +16,5 @@ add_subdirectory(serve)
 add_subdirectory(server)
 add_subdirectory(cluster)
 add_subdirectory(lib)
+add_subdirectory(http)
+add_subdirectory(router)

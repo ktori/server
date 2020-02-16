@@ -46,11 +46,13 @@ config_load(const char *filename)
 	{
 		if (*line != '#')
 		{
-			if (line[strlen(line) - 1] == '\n')
+			size_t len = strlen(line);
+			if (line[len - 1] == '\n')
 			{
-				line[strlen(line) - 1] = '\0'; /* remove \n */
+				line[len - 1] = '\0'; /* remove \n */
+				len--;
 			}
-			kv_push_from_line(result, line, '=', TRUE);
+			kv_push_from_line(result, line, len, '=', TRUE);
 		}
 	}
 

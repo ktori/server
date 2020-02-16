@@ -47,20 +47,26 @@ kv_free_node(struct kv_node_s *node)
 void
 kv_push(struct kv_list_s *list, const char *key, const char *value)
 {
-	struct kv_node_s *node;
-
 	if (key == NULL)
 		key = "";
 	if (value == NULL)
 		value = "";
 
+	kv_push_n(list, key, strlen(key), value, strlen(value));
+}
+
+void
+kv_push_n(struct kv_list_s *list, const char *key, size_t key_length, const char *value, size_t value_length)
+{
+	struct kv_node_s *node;
+
 	list->count++;
 	node = calloc(1, sizeof(struct kv_node_s));
 
-	node->key = malloc(strlen(key) + 1);
-	node->value = malloc(strlen(value) + 1);
-	strcpy(node->key, key);
-	strcpy(node->value, value);
+	node->key = calloc(key_length + 1, sizeof(char));
+	node->value = calloc(value_length + 1, sizeof(char));
+	strncpy(node->key, key, key_length);
+	strncpy(node->value, value, value_length);
 
 	node->prev = list->tail;
 
@@ -79,12 +85,13 @@ kv_push(struct kv_list_s *list, const char *key, const char *value)
 void
 kv_push_from_line(struct kv_list_s *list,
 				  const char *line,
+				  size_t line_length,
 				  char delim,
 				  bool trim_whitespace)
 {
 	struct kv_node_s *node;
 
-	node = kv_from_line(line, delim, trim_whitespace);
+	node = kv_from_line(line, line_length, delim, trim_whitespace);
 
 	list->count++;
 	node->prev = list->tail;
@@ -125,7 +132,7 @@ kv_pop(struct kv_list_s *list)
 }
 
 struct kv_node_s *
-kv_from_line(const char *line, char delim, bool trim_whitespace)
+kv_from_line(const char *line, size_t line_length, char delim, bool trim_whitespace)
 {
 	struct kv_node_s *node;
 	int i, begin, end;

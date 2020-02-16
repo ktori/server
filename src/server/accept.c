@@ -6,6 +6,7 @@
 #include "client.h"
 #include "../lib/http.h"
 #include "../serve/serve.h"
+#include "../http/request.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,39 +15,27 @@ int
 server_accept(struct server_s *server, struct client_s *client)
 {
 	struct http_response_s *response;
-	struct http_request_s *request;
-	FILE *rq_log;
-	char *rq_buffer;
+	struct http_request_s request = {};
 	char *rs_buffer;
 	int response_length;
-	size_t request_length;
 
-	if (client_read(client, &rq_buffer, &request_length) != EXIT_SUCCESS)
+	if (http_request_read(client, &request) != EXIT_SUCCESS)
 	{
 		perror("reading request");
+		http_request_free(&request);
 		return EXIT_FAILURE;
 	}
 
-	if (request_length >= 0)
-	{
-		request = http_request_from_buffer(rq_buffer, request_length);
-		if (request != NULL)
-		{
-			rq_log = fopen("requests.log", "a");
-			fprintf(rq_log, "--- REQUEST ---\n\n%s\n", rq_buffer);
-			fclose(rq_log);
-			request->sockfd = client->socket;
-		}
-	}
-	else
-	{
-		request = NULL;
-	}
+	/*
+	rq_log = fopen("requests.log", "a");
+	fprintf(rq_log, "--- REQUEST ---\n\n%s\n", rq_buffer);
+	fclose(rq_log);
+	 */
 
 	response = calloc(1, sizeof(struct http_response_s));
 	response->headers = kv_create();
 
-	serve(request, response);
+	serve(&request, response);
 
 	response_length = http_response_length(response);
 	rs_buffer = calloc(response_length + 2, 1);
@@ -54,13 +43,10 @@ server_accept(struct server_s *server, struct client_s *client)
 
 	client_write(client, rs_buffer, response_length);
 
-	if (request_length >= 0)
-		free(rq_buffer);
 	free(rs_buffer);
 
 	http_response_free(response);
-	if (request != NULL)
-		http_request_free(request);
+	http_request_free(&request);
 
 	return 0;
 }

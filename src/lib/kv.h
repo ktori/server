@@ -2,6 +2,8 @@
 
 #include "../def.h"
 
+#include <stdlib.h>
+
 struct kv_node_s
 {
 	char *key;
@@ -35,8 +37,12 @@ void
 kv_push(struct kv_list_s *list, const char *key, const char *value);
 
 void
+kv_push_n(struct kv_list_s *list, const char *key, size_t key_length, const char *value, size_t value_length);
+
+void
 kv_push_from_line(struct kv_list_s *list,
 				  const char *line,
+				  size_t line_length,
 				  char delim,
 				  bool trim_whitespace);
 
@@ -44,7 +50,7 @@ void
 kv_pop(struct kv_list_s *list);
 
 struct kv_node_s *
-kv_from_line(const char *line, char delim, bool trim_whitespace);
+kv_from_line(const char *line, size_t line_length, char delim, bool trim_whitespace);
 
 struct kv_node_s *
 kv_find(struct kv_list_s *list, const char *key);

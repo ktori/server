@@ -8,6 +8,7 @@
 #include "error.h"
 #include "../exec.h"
 #include "../server.h"
+#include "../http/request.h"
 
 #include <stdio.h>
 #include <malloc.h>

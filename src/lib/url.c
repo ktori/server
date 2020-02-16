@@ -77,7 +77,7 @@ url_decode(const char *in)
 }
 
 struct uri_s *
-uri_make(const char *uri)
+uri_make(const char *uri, size_t length)
 {
 	enum read_state
 	{
@@ -98,8 +98,9 @@ uri_make(const char *uri)
 
 	state = SCHEME;
 	result = calloc(1, sizeof(struct uri_s));
-	result->complete = malloc(strlen(uri) + 1);
-	strcpy(result->complete, uri);
+	result->complete = malloc(length + 1);
+	strncpy(result->complete, uri, length);
+	result->complete[length] = 0;
 
 	if (*uri == '/')
 	{
@@ -110,7 +111,7 @@ uri_make(const char *uri)
 		state = PATH;
 		begin = 0;
 	}
-	for (i = 0; i < strlen(uri) + 1; ++i)
+	for (i = 0; i < length; ++i)
 	{
 		if (state == SCHEME)
 		{
@@ -173,11 +174,12 @@ uri_make(const char *uri)
 		}
 		else if (state == PATH)
 		{
-			if ((uri[i] == '?') || (uri[i] == '#') || (uri[i] == '\0'))
+			if ((uri[i] == '?') || (uri[i] == '#') || (uri[i] == '\0') || i == length - 1)
 			{
-				result->spath = malloc(i - begin + 1);
-				strncpy(result->spath, uri + begin, i - begin);
-				result->spath[i - begin] = '\0';
+				size_t path_size = i == length - 1 ? i - begin + 1 : i - begin;
+				result->spath = malloc(path_size + 1);
+				strncpy(result->spath, uri + begin, path_size);
+				result->spath[path_size] = '\0';
 				result->path = path_make(result->spath);
 				begin = i + 1;
 				if (uri[i] == '?')

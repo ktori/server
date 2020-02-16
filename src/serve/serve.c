@@ -13,6 +13,7 @@
 #include "../server.h"
 #include "cgi.h"
 #include "../lib/url.h"
+#include "../http/request.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,7 +33,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 	response->version_minor = 1;
 	response->code = 200;
 
-	if (request == NULL || !STREQ(request->method, "GET") ||
+	if (request == NULL || request->method != HTTP_METHOD_GET ||
 		request->uri == NULL || request->uri->path == NULL)
 	{
 		serve_error(response, 400, "Bad Request");

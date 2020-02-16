@@ -1,0 +1,9 @@
+target_sources(server
+        PRIVATE
+        request.c
+        request.h
+        headers.c
+        headers.h
+        request_line.c
+        request_line.h
+        )

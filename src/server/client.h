@@ -35,6 +35,9 @@ int
 client_read(struct client_s *client, char **out, size_t *out_length);
 
 int
+client_read_some(struct client_s *client, char *out, size_t buffer_size, size_t *out_length);
+
+int
 client_write(struct client_s *client, const char *data, size_t length);
 
 int

@@ -4,6 +4,7 @@
 #include "lib/http.h"
 #include "lib/kv.h"
 #include "lib/path.h"
+#include "http/request.h"
 
 int
 cgi_prepare_environment(struct http_request_s *request,
