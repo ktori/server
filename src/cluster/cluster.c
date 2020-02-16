@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <poll.h>
 #include <unistd.h>
+#include <errno.h>
 
 int
 cluster_init(struct cluster_s *cluster)
@@ -73,7 +74,8 @@ cluster_run(struct cluster_s *cluster)
 				struct client_s client;
 				if (client_accept(&cluster->servers[i], &client) != EXIT_SUCCESS)
 				{
-					perror("client_accept()");
+					if (errno != EAGAIN)
+						perror("client_accept()");
 					break;
 				}
 #if USE_FORKS

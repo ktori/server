@@ -25,7 +25,8 @@ client_accept(struct server_s *server, struct client_s *client)
 
 	if (client->socket < 0)
 	{
-		perror("accept()");
+		if (errno != EAGAIN)
+			perror("accept()");
 		return EXIT_FAILURE;
 	}
 
