@@ -12,11 +12,13 @@ static const char *config_loc_cached = NULL;
 const char *
 config_loc()
 {
+	const char *config_env;
+
 	if (config_loc_cached != NULL)
 	{
 		return config_loc_cached;
 	}
-	const char *config_env = getenv("CONFIG");
+	config_env = getenv("CONFIG");
 	if (config_env != NULL)
 	{
 		return (config_loc_cached = config_env);
@@ -30,9 +32,9 @@ config_load(const char *filename)
 	struct kv_list_s *result;
 	FILE *cfg;
 	char line[2048];
+	char config_path[512];
 
 	result = kv_create();
-	char config_path[512];
 	snprintf(config_path, 512, "%s/%s", config_loc(), filename);
 	cfg = fopen(config_path, "r");
 

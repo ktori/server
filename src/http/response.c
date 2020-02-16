@@ -21,11 +21,12 @@ http_response_write(struct http_response_s *response, struct client_s *client)
 {
 	struct kv_node_s *iter = NULL;
 	size_t size, buffer_size;
+	char *status_buffer;
 
 	const char *s_message = status_message(response->status);
 	size_t status_message_size = strlen(s_message) + 16;
 	buffer_size = status_message_size + 1;
-	char *status_buffer = malloc(buffer_size);
+	status_buffer = malloc(buffer_size);
 
 	status_message_size = snprintf(status_buffer,
 								   buffer_size,

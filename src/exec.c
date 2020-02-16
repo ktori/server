@@ -88,6 +88,8 @@ pexec(const char *path,
 	char *buf;
 	int written;
 	int tmp;
+	int retval;
+	int status;
 
 	out = 0;
 	out_bufsize = 200;
@@ -113,7 +115,7 @@ pexec(const char *path,
 		close(pipes_cp[P_READ]);
 		close(pipes_pc[P_WRITE]);
 
-		int retval = execve(path, (char *const *) args, (char *const *) env);
+		retval = execve(path, (char *const *) args, (char *const *) env);
 		exit(retval);
 	}
 	else
@@ -151,7 +153,6 @@ pexec(const char *path,
 		*output = buf;
 		*output_length = out;
 
-		int status;
 		do
 		{
 			int w = waitpid(pid, &status, 0);

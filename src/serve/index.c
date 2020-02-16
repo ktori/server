@@ -68,20 +68,10 @@ serve_index(struct http_response_s *response, const char *folder)
 			total += len;
 			if (!S_ISDIR(filestat.st_mode))
 			{
-				if (sizeof(off_t) == sizeof(long long))
-				{
-					len = snprintf(body + total,
-								   1024 * 16 - total,
-								   "%lld bytes",
-								   (long long) filestat.st_size);
-				}
-				else
-				{
-					len = snprintf(body + total,
-								   1024 * 16 - total,
-								   "%ld bytes",
-								   (long) filestat.st_size);
-				}
+				len = snprintf(body + total,
+							   1024 * 16 - total,
+							   "%lu bytes",
+							   filestat.st_size);
 			}
 			else
 			{

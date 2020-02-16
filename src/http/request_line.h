@@ -3,7 +3,8 @@
 */
 #pragma once
 
-enum http_status;
+#include "status.h"
+
 struct http_request_s;
 
 int

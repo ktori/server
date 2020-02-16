@@ -34,6 +34,8 @@ headers_read(struct http_request_s *request, enum http_status *out_status)
 	bool cr_flag = FALSE;
 	bool set_cr_flag = FALSE;
 	size_t name_begin = 0, name_end = 0, value_begin = 0;
+	const char *current;
+	bool crlf, consume;
 
 	do
 	{
@@ -57,7 +59,7 @@ headers_read(struct http_request_s *request, enum http_status *out_status)
 			buf->pos_write += out_read;
 		}
 
-		const char *current = bytebuf_read_ptr(buf);
+		current = bytebuf_read_ptr(buf);
 
 		if (set_cr_flag)
 		{
@@ -68,8 +70,8 @@ headers_read(struct http_request_s *request, enum http_status *out_status)
 		{
 			set_cr_flag = TRUE;
 		}
-		bool crlf = cr_flag && *current == '\n';
-		bool consume = TRUE;
+		crlf = cr_flag && *current == '\n';
+		consume = TRUE;
 
 		switch (current_state)
 		{

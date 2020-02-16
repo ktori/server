@@ -85,15 +85,15 @@ http_request_free(struct http_request_s *request)
 }
 
 static const char *METHOD_NAMES[] = {
-		[HTTP_METHOD_UNKNOWN] = NULL,
-		[HTTP_METHOD_GET] = "GET",
-		[HTTP_METHOD_OPTIONS] = "OPTIONS",
-		[HTTP_METHOD_HEAD] = "HEAD",
-		[HTTP_METHOD_POST] = "POST",
-		[HTTP_METHOD_PUT] = "PUT",
-		[HTTP_METHOD_PATCH] = "PATCH",
-		[HTTP_METHOD_DELETE] = "DELETE",
-		[HTTP_METHOD_CUSTOM] = NULL
+		NULL,
+		"GET",
+		"OPTIONS",
+		"HEAD",
+		"POST",
+		"PUT",
+		"PATCH",
+		"DELETE",
+		NULL
 };
 
 const char *

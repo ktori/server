@@ -34,9 +34,11 @@ server_make_response(struct client_s *client, struct http_response_s *response)
 int
 server_accept(struct server_s *server, struct client_s *client)
 {
-	struct http_response_s response = {.version_major = 1, .version_minor = 1, 0};
+	struct http_response_s response = {0};
 	int exit_status;
 
+	response.version_major = 1;
+	response.version_minor = 1;
 	response.headers = kv_create();
 	kv_push(response.headers, "Server", "server.c");
 	kv_push(response.headers, "Connection", "close");
@@ -46,7 +48,7 @@ server_accept(struct server_s *server, struct client_s *client)
 	if (response.body != NULL)
 	{
 		char content_length[16];
-		snprintf(content_length, 15, "%zu", response.length);
+		snprintf(content_length, 15, "%lu", response.length);
 		kv_push(response.headers, "Content-Length", content_length);
 	}
 

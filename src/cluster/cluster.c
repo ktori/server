@@ -41,14 +41,15 @@ cluster_add(struct cluster_s *cluster, struct server_s *server)
 int
 cluster_run(struct cluster_s *cluster)
 {
+	int timeout = 60 * 1000;
 	struct pollfd *fds = calloc(cluster->count, sizeof(struct pollfd));
 	size_t i;
+
 	for (i = 0; i < cluster->count; ++i)
 	{
 		fds[i].fd = cluster->servers[i].sock_fd;
 		fds[i].events = POLLIN;
 	}
-	int timeout = 60 * 1000;
 
 	do
 	{

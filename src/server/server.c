@@ -36,15 +36,16 @@ static int
 server_setup_ssl(struct server_s *server)
 #if SERVER_USE_SSL
 {
+	SSL_CTX *ssl_ctx = NULL;
+	const SSL_METHOD *method = TLS_server_method();
+	const char *cert_path, *key_path;
+
 	if (kv_int(server->config, "ssl", 0) == 0)
 	{
 		server->ssl_ctx = NULL;
 		return EXIT_SUCCESS;
 	}
 
-	SSL_CTX *ssl_ctx = NULL;
-
-	const SSL_METHOD *method = TLS_server_method();
 	ssl_ctx = SSL_CTX_new(method);
 	if (ssl_ctx == NULL)
 	{
@@ -56,13 +57,13 @@ server_setup_ssl(struct server_s *server)
 
 	SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
 
-	const char *cert_path = kv_string(server->config, "ssl.cert", NULL);
+	cert_path = kv_string(server->config, "ssl.cert", NULL);
 	if (cert_path == NULL)
 	{
 		fprintf(stderr, "ssl.cert not set\n");
 		return EXIT_FAILURE;
 	}
-	const char *key_path = kv_string(server->config, "ssl.key", NULL);
+	key_path = kv_string(server->config, "ssl.key", NULL);
 	if (key_path == NULL)
 	{
 		fprintf(stderr, "ssl.key not set\n");
@@ -94,14 +95,17 @@ server_setup_ssl(struct server_s *server)
 int
 server_setup(struct server_s *server, struct kv_list_s *config)
 {
-	server->is_running = 0;
-	server->sock_fd = -1;
-	server->config = config;
-	server_setup_ssl(server);
+	struct timeval tv;
 
 	struct addrinfo hints, *info = 0, *j;
 	int status, sockfd;
 	in_port_t port;
+	int on = 1;
+
+	server->is_running = 0;
+	server->sock_fd = -1;
+	server->config = config;
+	server_setup_ssl(server);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -124,12 +128,11 @@ server_setup(struct server_s *server, struct kv_list_s *config)
 			continue;
 		}
 
-		struct timeval tv;
 		tv.tv_sec = 8;
 		tv.tv_usec = 0;
 		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof(tv));
-		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int));
-		ioctl(sockfd, FIONBIO, &(char) {1});
+		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int));
+		ioctl(sockfd, FIONBIO, &on);
 
 		status = bind(sockfd, j->ai_addr, j->ai_addrlen);
 		if (status == -1)

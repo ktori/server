@@ -4,8 +4,7 @@
 #pragma once
 
 #include "../lib/bytebuf.h"
-
-enum http_status;
+#include "status.h"
 
 enum http_method
 {

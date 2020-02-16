@@ -38,6 +38,8 @@ request_line_read(struct http_request_s *request, enum http_status *out_status)
 	enum state current_state = RL_BEGIN;
 	size_t out_read;
 	size_t request_line_start = 0, request_target_start = 0;
+	const char *current;
+	bool consume;
 
 	do
 	{
@@ -53,8 +55,8 @@ request_line_read(struct http_request_s *request, enum http_status *out_status)
 			buf->pos_write += out_read;
 		}
 
-		const char *current = bytebuf_read_ptr(&request->read_buffer);
-		bool consume = TRUE;
+		current = bytebuf_read_ptr(&request->read_buffer);
+		consume = TRUE;
 
 		switch (current_state)
 		{

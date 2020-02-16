@@ -102,6 +102,7 @@ client_read(struct client_s *client, char **out, size_t *out_length)
 	char *buffer;
 	size_t total = 0;
 	size_t size = 128;
+	const char *headers_end;
 
 	buffer = malloc(size);
 
@@ -124,7 +125,7 @@ client_read(struct client_s *client, char **out, size_t *out_length)
 			size *= 2;
 			buffer = realloc(buffer, size);
 		}
-		const char *headers_end = strstr(buffer + total - received, "\r\n\r\n");
+		headers_end = strstr(buffer + total - received, "\r\n\r\n");
 		if (headers_end != NULL)
 		{
 			/* TODO POST request (body) */
@@ -139,10 +140,11 @@ client_read(struct client_s *client, char **out, size_t *out_length)
 int
 client_write(struct client_s *client, const char *data, size_t length)
 {
+	int sent;
+
 	if (client->eof)
 		return EXIT_FAILURE;
 
-	int sent;
 	while (length > 0)
 	{
 

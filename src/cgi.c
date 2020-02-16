@@ -102,6 +102,7 @@ cgi_prepare_environment(struct http_request_s *request,
 	char *path_rel;
 	char *path_abs;
 	char **interp;
+	const char *method;
 
 	char *tmp1, *tmp2;
 
@@ -124,7 +125,7 @@ cgi_prepare_environment(struct http_request_s *request,
 	/* kv_push("REMOTE_HOST", ""); */
 	kv_push(env, "REMOTE_PORT", port_s);
 	/* kv_push("REMOTE_USER", ""); */
-	const char *method = http_request_method_name(request);
+	method = http_request_method_name(request);
 	if (method != NULL)
 		kv_push(env, "REQUEST_METHOD", method);
 	if (request->uri->scheme != NULL)

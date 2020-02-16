@@ -37,6 +37,10 @@ ssl_cleanup()
 int
 main(int argc, const char **argv)
 {
+	struct server_s server = {0};
+	struct server_s server_ssl = {0};
+	struct cluster_s cluster = {0};
+
 	/*signal(SIGINT, sighandler);
 	signal(SIGTERM, sighandler);
 	signal(SIGSEGV, sighandler);*/
@@ -44,10 +48,6 @@ main(int argc, const char **argv)
 	global_config = config_load("server.conf");
 
 	setup_document_root();
-
-	struct server_s server;
-	struct server_s server_ssl;
-	struct cluster_s cluster;
 
 	if (cluster_init(&cluster) != EXIT_SUCCESS)
 	{
