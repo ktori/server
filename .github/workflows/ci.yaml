@@ -9,9 +9,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: checkout submodules
-        run: |
-          git submodule update --init
+      - name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@master
       - name: configure
         run: |
           mkdir build
