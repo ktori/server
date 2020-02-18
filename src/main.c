@@ -45,9 +45,6 @@ main(int argc, const char **argv)
 	signal(SIGTERM, sighandler);
 	signal(SIGSEGV, sighandler);*/
 	signal(SIGCHLD, SIG_IGN);
-	global_config = config_load("server.conf");
-
-	setup_document_root();
 
 	if (cluster_init(&cluster) != EXIT_SUCCESS)
 	{

@@ -23,8 +23,6 @@
 #include "serve/serve.h"
 #include <conf/config.h>
 
-char *documentroot;
-
 int
 get_client_addr(int sockfd, char **addr_out, int *port)
 {
@@ -53,33 +51,4 @@ get_client_addr(int sockfd, char **addr_out, int *port)
 	*addr_out = addr_s;
 
 	return EXIT_SUCCESS;
-}
-
-void
-setup_document_root(void)
-{
-	const char *cfg_root;
-	char *tmp;
-	char cwd[PATH_MAX + 1];
-	struct path_s *path;
-
-	cfg_root = kv_string(global_config, "root", "www");
-	if (*cfg_root == '/')
-	{
-		documentroot = malloc(strlen(cfg_root) + 1);
-		strcpy(documentroot, cfg_root);
-	}
-	else
-	{
-		getcwd(cwd, sizeof(cwd));
-		path = path_make(cwd);
-		path_cat(path, cfg_root);
-		tmp = path_to_string(path, "");
-		path_free(path);
-		documentroot = malloc(strlen(tmp) + 1);
-		strcpy(documentroot, tmp);
-		free(tmp);
-	}
-
-	printf("Serving: %s\n", documentroot);
 }

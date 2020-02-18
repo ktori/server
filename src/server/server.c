@@ -38,9 +38,8 @@ server_setup_ssl(struct server_s *server)
 {
 	SSL_CTX *ssl_ctx = NULL;
 	const SSL_METHOD *method = TLS_server_method();
-	const char *cert_path, *key_path;
 
-	if (kv_int(server->config, "ssl", 0) == 0)
+	if (!server->config->ssl)
 	{
 		server->ssl_ctx = NULL;
 		return EXIT_SUCCESS;
@@ -57,24 +56,22 @@ server_setup_ssl(struct server_s *server)
 
 	SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
 
-	cert_path = kv_string(server->config, "ssl.cert", NULL);
-	if (cert_path == NULL)
+	if (server->config->ssl_cert == NULL)
 	{
 		fprintf(stderr, "ssl.cert not set\n");
 		return EXIT_FAILURE;
 	}
-	key_path = kv_string(server->config, "ssl.key", NULL);
-	if (key_path == NULL)
+	if (server->config->ssl_key == NULL)
 	{
 		fprintf(stderr, "ssl.key not set\n");
 		return EXIT_FAILURE;
 	}
-	if (SSL_CTX_use_certificate_file(ssl_ctx, cert_path, SSL_FILETYPE_PEM) <= 0)
+	if (SSL_CTX_use_certificate_file(ssl_ctx, server->config->ssl_cert, SSL_FILETYPE_PEM) <= 0)
 	{
 		ERR_print_errors_fp(stderr);
 		return EXIT_FAILURE;
 	}
-	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, key_path, SSL_FILETYPE_PEM) <= 0)
+	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, server->config->ssl_key, SSL_FILETYPE_PEM) <= 0)
 	{
 		ERR_print_errors_fp(stderr);
 		return EXIT_FAILURE;
@@ -93,10 +90,11 @@ server_setup_ssl(struct server_s *server)
 #endif
 
 int
-server_setup(struct server_s *server, struct kv_list_s *config)
+server_setup(struct server_s *server, struct server_config_s *config)
 {
 	struct timeval tv;
 
+	char port_s[16];
 	struct addrinfo hints, *info = 0, *j;
 	int status, sockfd;
 	in_port_t port;
@@ -112,7 +110,8 @@ server_setup(struct server_s *server, struct kv_list_s *config)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	status = getaddrinfo(0, kv_string(config, "port", "8080"), &hints, &info);
+	snprintf(port_s, 16, "%d", config->port);
+	status = getaddrinfo(0, port_s, &hints, &info);
 	if (status != 0)
 	{
 		printf("[error] getaddrinfo returned %d\n", status);

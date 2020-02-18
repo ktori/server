@@ -6,6 +6,7 @@
 #include <conf/config.h>
 
 #include "client.h"
+#include "../lib/config.h"
 
 #if SERVER_USE_SSL
 #include <openssl/ossl_typ.h>
@@ -15,7 +16,7 @@ struct server_s
 {
 	int is_running;
 	int sock_fd;
-	struct kv_list_s *config;
+	struct server_config_s *config;
 #if SERVER_USE_SSL
 	SSL_CTX *ssl_ctx;
 #endif
@@ -26,7 +27,7 @@ struct client_s;
 struct sockaddr_storage;
 
 int
-server_setup(struct server_s *server, struct kv_list_s *config);
+server_setup(struct server_s *server, struct server_config_s *config);
 
 int
 server_listen(struct server_s *server);
