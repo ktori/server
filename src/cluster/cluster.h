@@ -19,7 +19,13 @@ int
 cluster_add(struct cluster_s *cluster, struct server_s *server);
 
 int
+cluster_alloc(struct cluster_s *cluster, struct server_s **server_out);
+
+int
 cluster_run(struct cluster_s *cluster);
+
+int
+cluster_listen(struct cluster_s *cluster);
 
 int
 cluster_destroy(struct cluster_s *cluster);

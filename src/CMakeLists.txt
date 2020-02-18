@@ -14,6 +14,7 @@ target_sources(server
         shutdown.h
         )
 
+add_subdirectory(conf)
 add_subdirectory(serve)
 add_subdirectory(server)
 add_subdirectory(cluster)

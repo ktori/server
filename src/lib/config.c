@@ -206,17 +206,15 @@ config_load(struct server_config_s *config, const char *filename)
 {
 	FILE *cfg;
 	char line[2048];
-	char config_path[512];
 	struct yaml_s *yaml;
 	struct yaml_document_s document;
 	int status = EXIT_SUCCESS;
 
-	snprintf(config_path, 512, "%s/%s", config_loc(), filename);
-	cfg = fopen(config_path, "r");
+	cfg = fopen(filename, "r");
 
 	if (cfg == NULL)
 	{
-		fprintf(stderr, "could not read config file: %s\n", config_path);
+		fprintf(stderr, "could not read config file: %s\n", filename);
 
 		return EXIT_FAILURE;
 	}

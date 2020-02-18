@@ -41,17 +41,17 @@ serve_cgi(struct http_response_s *response, struct http_request_s *request)
 
 	script = request->uri->path;
 
-	if (cgi_is_script(request->client->server->config, script) != TRUE)
+	if (cgi_is_script(&request->client->server->config, script) != TRUE)
 	{
 		return -2;
 	}
-	if (cgi_prepare_environment(request->client->server->config, request, script, &cmd, &env, &args) != EXIT_SUCCESS)
+	if (cgi_prepare_environment(&request->client->server->config, request, script, &cmd, &env, &args) != EXIT_SUCCESS)
 	{
-		serve_error(request->client->server->config, response, HTTP_S_SERVER_ERROR, "Internal Server Error");
+		serve_error(&request->client->server->config, response, HTTP_S_SERVER_ERROR, "Internal Server Error");
 		return EXIT_FAILURE;
 	}
 
-	script_path = path_to_string(script, request->client->server->config->root);
+	script_path = path_to_string(script, request->client->server->config.root);
 
 	env_arr = kv_to_env(env);
 	args_arr = kv_to_args(args);
@@ -78,7 +78,7 @@ serve_cgi(struct http_response_s *response, struct http_request_s *request)
 	else
 	{
 		fprintf(stderr, "cgi exec failed: %d\n", status);
-		serve_error(request->client->server->config, response, HTTP_S_SERVER_ERROR, "Internal Server Error");
+		serve_error(&request->client->server->config, response, HTTP_S_SERVER_ERROR, "Internal Server Error");
 	}
 
 	kv_free(env);

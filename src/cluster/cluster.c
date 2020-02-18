@@ -24,6 +24,19 @@ cluster_init(struct cluster_s *cluster)
 int
 cluster_add(struct cluster_s *cluster, struct server_s *server)
 {
+	struct server_s *alloc;
+
+	if (cluster_alloc(cluster, &alloc) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+
+	memcpy(alloc, server, sizeof(struct server_s));
+
+	return EXIT_SUCCESS;
+}
+
+int
+cluster_alloc(struct cluster_s *cluster, struct server_s **server_out)
+{
 	if (cluster->count == cluster->capacity)
 	{
 		cluster->capacity *= 2;
@@ -31,15 +44,29 @@ cluster_add(struct cluster_s *cluster, struct server_s *server)
 		memset(cluster->servers + cluster->count, 0, (cluster->capacity - cluster->count) * sizeof(struct server_s));
 	}
 
-	memcpy(&cluster->servers[cluster->count], server, sizeof(struct server_s));
+	*server_out = cluster->servers + cluster->count;
+	memset(cluster->servers + cluster->count, 0, sizeof(struct server_s));
 	cluster->count += 1;
-	memset(server, 0, sizeof(struct server_s));
 
 	return EXIT_SUCCESS;
 }
 
 int
 cluster_run(struct cluster_s *cluster)
+{
+	struct server_s *i = cluster->servers, *end = cluster->servers + cluster->count;
+
+	for (; i < end; ++i)
+	{
+		if (server_start(i) != EXIT_SUCCESS)
+			return EXIT_FAILURE; /* TODO: Stop started servers */
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int
+cluster_listen(struct cluster_s *cluster)
 {
 	int timeout = 60 * 1000;
 	struct pollfd *fds = calloc(cluster->count, sizeof(struct pollfd));

@@ -8,6 +8,7 @@
 #include "server.h"
 #include "cluster/cluster.h"
 #include "shutdown.h"
+#include "conf/servers.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <conf/config.h>
@@ -38,29 +39,12 @@ ssl_cleanup()
 int
 main(int argc, const char **argv)
 {
-	struct server_config_s cfg_1, cfg_2;
-	struct server_s server = {0};
-	struct server_s server_ssl = {0};
 	struct cluster_s cluster = {0};
 	int status = EXIT_SUCCESS;
 
 	graceful_shutdown_install();
 
-	graceful_shutdown_add_hook((void (*)(void *)) config_destroy, &cfg_1, NULL);
-	graceful_shutdown_add_hook((void (*)(void *)) config_destroy, &cfg_2, NULL);
-
 	signal(SIGCHLD, SIG_IGN);
-
-	if (config_load(&cfg_1, "server.yaml") != EXIT_SUCCESS)
-	{
-		fprintf(stderr, "config_load()\n");
-		return EXIT_FAILURE;
-	}
-	if (config_load(&cfg_2, "server-ssl.yaml") != EXIT_SUCCESS)
-	{
-		fprintf(stderr, "config_load()\n");
-		return EXIT_FAILURE;
-	}
 
 	if (cluster_init(&cluster) != EXIT_SUCCESS)
 	{
@@ -74,29 +58,22 @@ main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 #endif
-	if (server_setup(&server, &cfg_1) != EXIT_SUCCESS)
+
+	if (load_servers(&cluster) != EXIT_SUCCESS)
 	{
-		perror("server_setup()");
-		return EXIT_FAILURE;
-	}
-	if (cluster_add(&cluster, &server) != EXIT_SUCCESS)
-	{
-		perror("cluster_add()");
-		return EXIT_FAILURE;
-	}
-	if (server_setup(&server_ssl, &cfg_2) != EXIT_SUCCESS)
-	{
-		perror("server_setup()");
-		return EXIT_FAILURE;
-	}
-	if (cluster_add(&cluster, &server_ssl) != EXIT_SUCCESS)
-	{
-		perror("cluster_add()");
+		fprintf(stderr, "failed to load servers\n");
+		cluster_destroy(&cluster);
 		return EXIT_FAILURE;
 	}
 	if (cluster_run(&cluster) != EXIT_SUCCESS)
 	{
-		perror("cluster_run()");
+		fprintf(stderr, "failed to start servers\n");
+		cluster_destroy(&cluster);
+		return EXIT_FAILURE;
+	}
+	if (cluster_listen(&cluster) != EXIT_SUCCESS)
+	{
+		perror("cluster_listen()");
 		status = EXIT_FAILURE;
 	}
 	if (cluster_destroy(&cluster) != EXIT_SUCCESS)

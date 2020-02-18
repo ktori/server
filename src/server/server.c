@@ -39,7 +39,7 @@ server_setup_ssl(struct server_s *server)
 	SSL_CTX *ssl_ctx = NULL;
 	const SSL_METHOD *method = TLS_server_method();
 
-	if (!server->config->ssl)
+	if (!server->config.ssl)
 	{
 		server->ssl_ctx = NULL;
 		return EXIT_SUCCESS;
@@ -56,22 +56,22 @@ server_setup_ssl(struct server_s *server)
 
 	SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
 
-	if (server->config->ssl_cert == NULL)
+	if (server->config.ssl_cert == NULL)
 	{
 		fprintf(stderr, "ssl.cert not set\n");
 		return EXIT_FAILURE;
 	}
-	if (server->config->ssl_key == NULL)
+	if (server->config.ssl_key == NULL)
 	{
 		fprintf(stderr, "ssl.key not set\n");
 		return EXIT_FAILURE;
 	}
-	if (SSL_CTX_use_certificate_file(ssl_ctx, server->config->ssl_cert, SSL_FILETYPE_PEM) <= 0)
+	if (SSL_CTX_use_certificate_file(ssl_ctx, server->config.ssl_cert, SSL_FILETYPE_PEM) <= 0)
 	{
 		ERR_print_errors_fp(stderr);
 		return EXIT_FAILURE;
 	}
-	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, server->config->ssl_key, SSL_FILETYPE_PEM) <= 0)
+	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, server->config.ssl_key, SSL_FILETYPE_PEM) <= 0)
 	{
 		ERR_print_errors_fp(stderr);
 		return EXIT_FAILURE;
@@ -90,7 +90,7 @@ server_setup_ssl(struct server_s *server)
 #endif
 
 int
-server_setup(struct server_s *server, struct server_config_s *config)
+server_start(struct server_s *server)
 {
 	struct timeval tv;
 
@@ -102,7 +102,6 @@ server_setup(struct server_s *server, struct server_config_s *config)
 
 	server->is_running = 0;
 	server->sock_fd = -1;
-	server->config = config;
 	server_setup_ssl(server);
 
 	memset(&hints, 0, sizeof(hints));
@@ -110,7 +109,7 @@ server_setup(struct server_s *server, struct server_config_s *config)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	snprintf(port_s, 16, "%d", config->port);
+	snprintf(port_s, 16, "%d", server->config.port);
 	status = getaddrinfo(0, port_s, &hints, &info);
 	if (status != 0)
 	{
@@ -166,6 +165,7 @@ int
 server_cleanup(struct server_s *server)
 {
 	printf("cleaning up\n");
+	config_destroy(&server->config);
 	shutdown(server->sock_fd, SHUT_RDWR);
 	close(server->sock_fd);
 #if SERVER_USE_SSL

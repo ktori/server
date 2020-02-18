@@ -7,3 +7,6 @@
 #cmakedefine01 SERVER_USE_SSL
 #define LISTEN_BACKLOG 16
 #cmakedefine01 USE_FORKS
+
+#define CONFIG_DEFAULT "conf"
+#define CONFIG_ENV "CONFIG"
