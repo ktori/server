@@ -57,6 +57,7 @@ cluster_run(struct cluster_s *cluster)
 		if (result < 0)
 		{
 			perror("poll()");
+			free(fds);
 			return EXIT_FAILURE;
 		}
 		if (result == 0)
@@ -68,6 +69,7 @@ cluster_run(struct cluster_s *cluster)
 			if (fds[i].revents != POLLIN)
 			{
 				fprintf(stderr, "unexpected revents: %d\n", fds[i].revents);
+				free(fds);
 				return EXIT_FAILURE;
 			}
 			do
@@ -140,6 +142,8 @@ cluster_destroy(struct cluster_s *cluster)
 			status = EXIT_FAILURE;
 		}
 	}
+
+	free(cluster->servers);
 
 	return status;
 }

@@ -7,6 +7,7 @@
 #include "server/server.h"
 #include "server.h"
 #include "cluster/cluster.h"
+#include "shutdown.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <conf/config.h>
@@ -41,10 +42,13 @@ main(int argc, const char **argv)
 	struct server_s server = {0};
 	struct server_s server_ssl = {0};
 	struct cluster_s cluster = {0};
+	int status = EXIT_SUCCESS;
 
-	/*signal(SIGINT, sighandler);
-	signal(SIGTERM, sighandler);
-	signal(SIGSEGV, sighandler);*/
+	graceful_shutdown_install();
+
+	graceful_shutdown_add_hook((void (*)(void *)) config_destroy, &cfg_1, NULL);
+	graceful_shutdown_add_hook((void (*)(void *)) config_destroy, &cfg_2, NULL);
+
 	signal(SIGCHLD, SIG_IGN);
 
 	if (config_load(&cfg_1, "server.yaml") != EXIT_SUCCESS)
@@ -93,13 +97,13 @@ main(int argc, const char **argv)
 	if (cluster_run(&cluster) != EXIT_SUCCESS)
 	{
 		perror("cluster_run()");
-		return EXIT_FAILURE;
+		status = EXIT_FAILURE;
 	}
 	if (cluster_destroy(&cluster) != EXIT_SUCCESS)
 	{
 		perror("cluster_destroy()");
-		return EXIT_FAILURE;
+		status = EXIT_FAILURE;
 	}
 
-	return EXIT_SUCCESS;
+	return status;
 }

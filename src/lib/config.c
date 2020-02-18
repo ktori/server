@@ -87,6 +87,7 @@ setup_document_root(struct server_config_s *config, const char *cfg_root)
 		path_cat(path, cfg_root);
 		tmp = path_to_string(path, "");
 		path_free(path);
+		free(path);
 		config->root = malloc(strlen(tmp) + 1);
 		strcpy((char *) config->root, tmp);
 		free(tmp);

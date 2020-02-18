@@ -77,6 +77,7 @@ path_free(struct path_s *path)
 	{
 		next = node->next;
 		free(node->name);
+		free(node->extension);
 		free(node);
 		node = next;
 	}

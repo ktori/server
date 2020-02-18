@@ -10,6 +10,8 @@ target_sources(server
         server.c
         options.h
         main.c
+        shutdown.c
+        shutdown.h
         )
 
 add_subdirectory(serve)
