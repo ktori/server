@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 int
-serve_file(struct http_response_s *response, const char *filename, char noerr)
+serve_file(struct server_config_s *config, struct http_response_s *response, const char *filename, char noerr)
 {
 	FILE *file;
 	int length;
@@ -25,11 +25,11 @@ serve_file(struct http_response_s *response, const char *filename, char noerr)
 		{
 			if (errno == ENOENT)
 			{
-				serve_error(response, 404, "Not Found");
+				serve_error(config, response, 404, "Not Found");
 			}
 			else if (errno == EACCES)
 			{
-				serve_error(response, 403, "Forbidden");
+				serve_error(config, response, 403, "Forbidden");
 			}
 		}
 		return EXIT_FAILURE;
@@ -40,7 +40,7 @@ serve_file(struct http_response_s *response, const char *filename, char noerr)
 	{
 		if (noerr == 0)
 		{
-			serve_error(response, 500, "Internal server error");
+			serve_error(config, response, 500, "Internal server error");
 		}
 		return EXIT_FAILURE;
 	}

@@ -1,6 +1,6 @@
 #pragma once
 
-void
+int
 mimeinit(void);
 
 const char *

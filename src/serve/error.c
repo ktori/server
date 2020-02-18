@@ -13,21 +13,25 @@
 #include <stdlib.h>
 
 void
-serve_error(struct http_response_s *response, int error, const char *detail)
+serve_error(struct server_config_s *config, struct http_response_s *response, int error, const char *detail)
 {
-	char errcfg[32];
-	snprintf(errcfg, 32, "err.%d", error);
+	size_t i;
+	struct error_config_entry_s *error_config = NULL;
 
 	response->status = error;
 
-	if (kv_isset(global_config, errcfg) == TRUE)
+	for (i = 0; i < config->errors_count; ++i)
+		if (config->errors[i].code == error)
+			error_config = config->errors + i;
+
+	if (error_config != NULL)
 	{
-		if (serve_file(response, kv_string(global_config, errcfg, "error.html"), TRUE) ==
+		if (serve_file(config, response, error_config->document, TRUE) ==
 			EXIT_SUCCESS)
 		{
 			return;
 		}
 	}
 
-	serve_string(response, detail);
+	serve_string(config, response, detail);
 }

@@ -100,7 +100,7 @@ setup_document_root(struct server_config_s *config, const char *cfg_root)
 static int
 config_from_yaml(struct server_config_s *config, struct yaml_document_s *document)
 {
-	struct yaml_map_s *root, *errors, *cgi, *types;
+	struct yaml_map_s *root, *errors, *cgi, *types, *ssl;
 	struct yaml_kv_s *kv;
 	const char *cfg_root;
 	size_t i;
@@ -160,7 +160,7 @@ config_from_yaml(struct server_config_s *config, struct yaml_document_s *documen
 
 		config->cgi_size = types->array_size;
 		config->cgi_count = config->cgi_size;
-		config->errors = calloc(config->cgi_size, sizeof(struct cgi_config_entry_s));
+		config->cgi = calloc(config->cgi_size, sizeof(struct cgi_config_entry_s));
 		for (i = 0; i < types->array_size; ++i)
 		{
 			kv = &types->kv_array[i];
@@ -178,6 +178,23 @@ config_from_yaml(struct server_config_s *config, struct yaml_document_s *documen
 			kv = yaml_find_kv(cgi, "loose");
 			config->cgi[i].loose = (kv != NULL && kv->value.type == YVT_INT) ? kv->value.body.integer : 0;
 		}
+	}
+
+	kv = yaml_find_kv(root, "ssl");
+	if (kv != NULL)
+	{
+		if (kv->value.type != YVT_MAP)
+			return EXIT_FAILURE;
+		ssl = &kv->value.body.map;
+		config->ssl = 1;
+		kv = yaml_find_kv(ssl, "cert");
+		if (kv == NULL || kv->value.type != YVT_STRING)
+			return EXIT_FAILURE;
+		config->ssl_cert = yaml_take_string(&kv->value);
+		kv = yaml_find_kv(ssl, "key");
+		if (kv == NULL || kv->value.type != YVT_STRING)
+			return EXIT_FAILURE;
+		config->ssl_key = yaml_take_string(&kv->value);
 	}
 
 	return EXIT_SUCCESS;

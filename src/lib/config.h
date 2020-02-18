@@ -36,6 +36,9 @@ struct server_config_s
 	const char *ssl_key;
 };
 
+const char *
+config_loc();
+
 int
 config_load(struct server_config_s *config, const char *filename);
 
