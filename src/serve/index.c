@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 
 int
-serve_index(struct http_response_s *response, const char *folder)
+serve_index(struct server_config_s *config, struct http_response_s *response, const char *folder)
 {
 	struct dirent *dp;
 	DIR *dir;
@@ -27,12 +27,12 @@ serve_index(struct http_response_s *response, const char *folder)
 	struct stat filestat;
 	struct path_s *path;
 
-	snprintf(pathbuf, 512, "%s/%s", documentroot, folder);
+	snprintf(pathbuf, 512, "%s/%s", config->root, folder);
 
 	dir = opendir(pathbuf);
 	if (dir == NULL)
 	{
-		serve_error(response, 404, "Not Found");
+		serve_error(config, response, 404, "Not Found");
 		return EXIT_FAILURE;
 	}
 	total = 0;
@@ -55,7 +55,7 @@ serve_index(struct http_response_s *response, const char *folder)
 		path = path_make(folder);
 		path_push(path, dp->d_name);
 		tmp_name = path_to_string(path, "");
-		tmp_realname = path_to_string(path, documentroot);
+		tmp_realname = path_to_string(path, config->root);
 		printf("file: %s %s\n", tmp_realname, tmp_name);
 		if (stat(tmp_realname, &filestat) == EXIT_SUCCESS)
 		{

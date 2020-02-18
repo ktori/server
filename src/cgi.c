@@ -32,26 +32,38 @@ cgi_toupper(const char *string)
 }
 
 bool
-cgi_is_script(struct path_s *path)
+cgi_is_script(struct server_config_s *config, struct path_s *path)
 {
 	struct path_node_s *node;
 	int status;
 	char *tmp;
 	struct stat statbuf;
+	struct cgi_config_entry_s *cgi_config = NULL;
+	size_t i;
 
 	if (path->head == NULL)
 	{
 		return FALSE;
 	}
 
-	tmp = strmake("loose.%s", path->tail->extension);
+	for (i = 0; i < config->cgi_count; ++i)
+	{
+		if (strcmp(config->cgi[i].extension, path->tail->extension) == 0)
+		{
+			cgi_config = &config->cgi[i];
+			break;
+		}
+	}
 
-	if (kv_int(global_config, tmp, FALSE) == FALSE)
+	if (cgi_config == NULL)
+		return FALSE;
+
+	if (!cgi_config->loose)
 	{
 		node = path->head;
 		while (node != NULL)
 		{
-			if (STREQ(node->name, kv_string(global_config, "cgi", "cgi-bin")) == TRUE)
+			if (STREQ(node->name, config->cgi_bin) == TRUE)
 			{
 				break;
 			}
@@ -63,9 +75,7 @@ cgi_is_script(struct path_s *path)
 		}
 	}
 
-	free(tmp);
-
-	tmp = path_to_string(path, documentroot);
+	tmp = path_to_string(path, config->root);
 	status = stat(tmp, &statbuf);
 	free(tmp);
 
@@ -73,8 +83,7 @@ cgi_is_script(struct path_s *path)
 	{
 		return FALSE;
 	}
-	tmp = strmake("exec.%s", path->tail->extension);
-	if (statbuf.st_mode & S_IXUSR || (kv_int(global_config, tmp, FALSE) == TRUE))
+	if (statbuf.st_mode & S_IXUSR || cgi_config->exec)
 	{
 		if (S_ISREG(statbuf.st_mode))
 		{
@@ -85,7 +94,8 @@ cgi_is_script(struct path_s *path)
 }
 
 int
-cgi_prepare_environment(struct http_request_s *request,
+cgi_prepare_environment(struct server_config_s *config,
+						struct http_request_s *request,
 						struct path_s *script,
 						char **cmd,
 						struct kv_list_s **env_list,
@@ -94,6 +104,7 @@ cgi_prepare_environment(struct http_request_s *request,
 	struct kv_list_s *env;
 	struct kv_list_s *args;
 	struct kv_node_s *header;
+	struct cgi_config_entry_s *cgi_config = NULL;
 
 	char *addr;
 	int port;
@@ -103,8 +114,18 @@ cgi_prepare_environment(struct http_request_s *request,
 	char *path_abs;
 	char **interp;
 	const char *method;
+	size_t j;
 
 	char *tmp1, *tmp2;
+
+	for (j = 0; j < config->cgi_count; ++j)
+	{
+		if (strcmp(config->cgi[j].extension, script->tail->extension) == 0)
+			cgi_config = &config->cgi[j];
+	}
+
+	if (cgi_config == NULL)
+		return EXIT_FAILURE;
 
 	if (get_client_addr(request->client->socket, &addr, &port) != EXIT_SUCCESS)
 	{
@@ -113,12 +134,12 @@ cgi_prepare_environment(struct http_request_s *request,
 	snprintf(port_s, 16, "%d", port);
 
 	path_rel = path_to_string(script, "");
-	path_abs = path_to_string(script, documentroot);
+	path_abs = path_to_string(script, config->root);
 
 	env = kv_create();
 	args = kv_create();
 
-	kv_push(env, "DOCUMENT_ROOT", documentroot);
+	kv_push(env, "DOCUMENT_ROOT", config->root);
 	kv_push(env, "PATH", "/usr/local/bin:/usr/bin:/bin");
 	kv_push(env, "QUERY_STRING", request->uri->querystring);
 	kv_push(env, "REMOTE_ADDR", addr);
@@ -154,7 +175,7 @@ cgi_prepare_environment(struct http_request_s *request,
 	}
 
 	tmp1 = strmake("cgi.%s", script->tail->extension);
-	interp = kv_array(global_config, tmp1, ' ');
+	interp = array_from_string(cgi_config->command, ' ');
 	free(tmp1);
 
 	i = 0;

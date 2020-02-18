@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 int
-serve(struct http_request_s *request, struct http_response_s *response)
+serve(struct server_s *server, struct http_request_s *request, struct http_response_s *response)
 {
 	char *uri_path;
 	struct stat buf;
@@ -36,7 +36,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 	if (request == NULL || request->method != HTTP_METHOD_GET ||
 		request->uri == NULL || request->uri->path == NULL)
 	{
-		serve_error(response, 400, "Bad Request");
+		serve_error(server->config, response, 400, "Bad Request");
 		return EXIT_FAILURE;
 	}
 
@@ -54,7 +54,7 @@ serve(struct http_request_s *request, struct http_response_s *response)
 	   request->uri->spath, request->uri->querystring, request->uri->fragment);
 		printf("Body: %d bytes long\n", request->length);
 	  */
-	uri_path = path_to_string(request->uri->path, documentroot);
+	uri_path = path_to_string(request->uri->path, server->config->root);
 	printf("Requested URI = %s\n", uri_path);
 
 	if (serve_cgi(response, request) == -2)
@@ -63,23 +63,23 @@ serve(struct http_request_s *request, struct http_response_s *response)
 		if (S_ISDIR(buf.st_mode))
 		{
 			free(uri_path);
-			path_push(request->uri->path, kv_string(global_config, "index", "index.html"));
-			uri_path = path_to_string(request->uri->path, documentroot);
+			path_push(request->uri->path, server->config->index);
+			uri_path = path_to_string(request->uri->path, server->config->root);
 			if (stat(uri_path, &buf) != EXIT_SUCCESS)
 			{
 				path_pop(request->uri->path);
 				free(uri_path);
 				uri_path = path_to_string(request->uri->path, ".");
-				serve_index(response, uri_path);
+				serve_index(server->config, response, uri_path);
 			}
 			else
 			{
-				serve_file(response, uri_path, FALSE);
+				serve_file(server->config, response, uri_path, FALSE);
 			}
 		}
 		else
 		{
-			serve_file(response, uri_path, FALSE);
+			serve_file(server->config, response, uri_path, FALSE);
 		}
 	}
 

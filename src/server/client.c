@@ -58,6 +58,8 @@ client_setup(struct server_s *server, struct client_s *client)
 		client->ssl = NULL;
 #endif
 
+	client->server = server;
+
 	return EXIT_SUCCESS;
 }
 

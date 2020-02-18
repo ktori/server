@@ -17,6 +17,7 @@ struct server_s;
 
 struct client_s
 {
+	struct server_s *server;
 	int socket;
 	int eof;
 	struct sockaddr_storage addr;

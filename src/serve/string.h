@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include "../lib/config.h"
+
 struct http_response_s;
+struct server_config_s;
 
 void
-serve_string(struct http_response_s *response, const char *string);
+serve_string(struct server_config_s *config, struct http_response_s *response, const char *string);

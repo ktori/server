@@ -25,7 +25,7 @@ server_make_response(struct client_s *client, struct http_response_s *response)
 		return EXIT_FAILURE;
 	}
 
-	serve(&request, response);
+	serve(client->server, &request, response);
 	http_request_free(&request);
 
 	return EXIT_SUCCESS;

@@ -19,3 +19,7 @@ if (SERVER_USE_SSL)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(server OpenSSL::SSL OpenSSL::Crypto)
 endif ()
+
+add_subdirectory(lib/yaml)
+target_link_libraries(server yaml)
+target_include_directories(server PRIVATE lib)

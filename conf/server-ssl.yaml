@@ -1,0 +1,19 @@
+port: 8081
+index: index.html
+root: www
+cgi:
+  root: cgi-bin
+  types:
+    php:
+      command: /usr/bin/php-cgi
+      loose: 1
+      exec: 1
+    pl:
+      command: /usr/bin/perl -wT
+    cgi:
+      command: /usr/bin/perl -wT
+errors:
+  404: www/404.html
+ssl:
+  cert: conf/cert.pem
+  key:  conf/key.pem
