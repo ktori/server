@@ -243,14 +243,10 @@ uri_free(struct uri_s *uri)
 {
 	free(uri->complete);
 
-	if (uri->scheme != NULL)
-		free(uri->scheme);
-	if (uri->userinfo != NULL)
-		free(uri->userinfo);
-	if (uri->host != NULL)
-		free(uri->host);
-	if (uri->port != NULL)
-		free(uri->port);
+	free(uri->scheme);
+	free(uri->userinfo);
+	free(uri->host);
+	free(uri->port);
 	free(uri->spath);
 	free(uri->querystring);
 	free(uri->fragment);
@@ -258,7 +254,10 @@ uri_free(struct uri_s *uri)
 	if (uri->query != NULL)
 		kv_free(uri->query);
 	if (uri->path != NULL)
+	{
 		path_free(uri->path);
+		free(uri->path);
+	}
 }
 
 struct kv_list_s *

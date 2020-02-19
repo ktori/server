@@ -66,6 +66,8 @@ http_response_write(struct http_response_s *response, struct client_s *client)
 		client_write(client, "\r\n", 2);
 	}
 
+	free(status_buffer);
+
 	if (response->body)
 	{
 		if (client_write(client, response->body, response->length) != EXIT_SUCCESS)
