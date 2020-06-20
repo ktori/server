@@ -21,7 +21,8 @@ if (SERVER_USE_SSL)
 endif ()
 
 add_subdirectory(lib/yaml)
-target_link_libraries(server yaml)
-target_include_directories(server PRIVATE lib)
 
 add_subdirectory(vhttpsl)
+
+target_link_libraries(server yaml vhttpsl bits)
+target_include_directories(server PRIVATE lib)

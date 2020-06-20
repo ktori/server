@@ -1,5 +1,5 @@
-#include "kv.h"
-#include "str.h"
+#include "vhttpsl/bits/kv.h"
+#include "vhttpsl/bits/str.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -87,7 +87,7 @@ kv_push_from_line(struct kv_list_s *list,
 				  const char *line,
 				  size_t line_length,
 				  char delim,
-				  bool trim_whitespace)
+				  int trim_whitespace)
 {
 	struct kv_node_s *node;
 
@@ -132,14 +132,14 @@ kv_pop(struct kv_list_s *list)
 }
 
 struct kv_node_s *
-kv_from_line(const char *line, size_t line_length, char delim, bool trim_whitespace)
+kv_from_line(const char *line, size_t line_length, char delim, int trim_whitespace)
 {
 	struct kv_node_s *node;
 	int i, begin, end;
 	char *key, *value, *tmp;
-	bool key_read;
+	int key_read;
 
-	key_read = FALSE;
+	key_read = 0;
 	node = calloc(1, sizeof(struct kv_node_s));
 	key = NULL;
 	value = NULL;
@@ -147,19 +147,19 @@ kv_from_line(const char *line, size_t line_length, char delim, bool trim_whitesp
 	end = -1;
 	for (i = 0; i <= strlen(line); ++i)
 	{
-		if (line[i] == '\0' || (key_read == FALSE && line[i] == delim))
+		if (line[i] == '\0' || (key_read == 0 && line[i] == delim))
 		{
 			if (begin >= 0)
 			{
 				tmp = substr(line, begin, (end >= 0 ? end : i) - begin + 1);
-				if (key_read == TRUE)
+				if (key_read)
 				{
 					value = tmp;
 				}
 				else
 				{
 					key = tmp;
-					key_read = TRUE;
+					key_read = 1;
 				}
 			}
 			begin = (trim_whitespace ? -1 : (i + 1));
@@ -167,7 +167,7 @@ kv_from_line(const char *line, size_t line_length, char delim, bool trim_whitesp
 		}
 		else if (trim_whitespace)
 		{
-			if (isspace(line[i]) == FALSE)
+			if (isspace(line[i]) == 0)
 			{
 				if (begin < 0)
 				{
@@ -206,7 +206,7 @@ kv_find(struct kv_list_s *list, const char *key)
 	current = list->head;
 	while (current != NULL)
 	{
-		if (STRIEQ(current->key, key) == TRUE)
+		if (STRIEQ(current->key, key))
 		{
 			return current;
 		}
@@ -234,7 +234,7 @@ kv_set(struct kv_list_s *list, const char *key, const char *value)
 	}
 }
 
-bool
+int
 kv_isset(struct kv_list_s *list, const char *key)
 {
 	return kv_find(list, key) != NULL;

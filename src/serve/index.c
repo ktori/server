@@ -5,7 +5,7 @@
 #include "index.h"
 #include "../lib/http.h"
 #include "error.h"
-#include "../lib/path.h"
+#include "vhttpsl/bits/path.h"
 #include "../server.h"
 #include "../http/response.h"
 

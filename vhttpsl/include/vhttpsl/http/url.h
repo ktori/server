@@ -1,8 +1,8 @@
 #pragma once
 
-#include "str.h"
-#include "kv.h"
-#include "path.h"
+#include "vhttpsl/bits/str.h"
+#include "vhttpsl/bits/kv.h"
+#include "vhttpsl/bits/path.h"
 
 void
 url_init(void);

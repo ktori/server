@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../lib/str.h"
+#include "vhttpsl/bits/str.h"
 #include "../lib/http.h"
 #include "../http/request.h"
 #include "../http/response.h"

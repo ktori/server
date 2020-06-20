@@ -3,22 +3,9 @@
 */
 #pragma once
 
-#include "../lib/bytebuf.h"
 #include "status.h"
-
-enum http_method
-{
-	HTTP_METHOD_UNKNOWN,
-	HTTP_METHOD_GET,
-	HTTP_METHOD_OPTIONS,
-	HTTP_METHOD_HEAD,
-	HTTP_METHOD_POST,
-	HTTP_METHOD_PUT,
-	HTTP_METHOD_PATCH,
-	HTTP_METHOD_DELETE,
-	HTTP_METHOD_CUSTOM,
-	HTTP_METHOD_MAX = HTTP_METHOD_CUSTOM
-};
+#include <vhttpsl/bits/bytebuf.h>
+#include <vhttpsl/http/methods.h>
 
 struct http_request_s
 {

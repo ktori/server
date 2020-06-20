@@ -1,21 +1,10 @@
 target_sources(server
         PRIVATE
-
-        bytebuf.c
-        bytebuf.h
-        str.c
-        str.h
         config.c
         config.h
         crlf.c
         crlf.h
         http.h
-        kv.c
-        kv.h
         mime.c
         mime.h
-        path.c
-        path.h
-        url.c
-        url.h
         )

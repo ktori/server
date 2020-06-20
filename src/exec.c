@@ -1,5 +1,5 @@
 #include "exec.h"
-#include "lib/str.h"
+#include "vhttpsl/bits/str.h"
 
 #include <stdio.h>
 #include <stdlib.h>

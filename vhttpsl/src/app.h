@@ -3,3 +3,8 @@
 //
 
 #pragma once
+
+struct vhttpsl_app_s
+{
+	int dummy;
+};

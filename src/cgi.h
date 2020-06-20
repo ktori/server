@@ -1,9 +1,9 @@
 #pragma once
 
-#include "lib/str.h"
+#include "vhttpsl/bits/str.h"
 #include "lib/http.h"
-#include "lib/kv.h"
-#include "lib/path.h"
+#include "vhttpsl/bits/kv.h"
+#include "vhttpsl/bits/path.h"
 #include "http/request.h"
 
 struct server_config_s;

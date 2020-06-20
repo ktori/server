@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../def.h"
-
 #include <stdlib.h>
 
 struct kv_node_s
@@ -44,18 +42,18 @@ kv_push_from_line(struct kv_list_s *list,
 				  const char *line,
 				  size_t line_length,
 				  char delim,
-				  bool trim_whitespace);
+				  int trim_whitespace);
 
 void
 kv_pop(struct kv_list_s *list);
 
 struct kv_node_s *
-kv_from_line(const char *line, size_t line_length, char delim, bool trim_whitespace);
+kv_from_line(const char *line, size_t line_length, char delim, int trim_whitespace);
 
 struct kv_node_s *
 kv_find(struct kv_list_s *list, const char *key);
 
-bool
+int
 kv_isset(struct kv_list_s *list, const char *key);
 
 void

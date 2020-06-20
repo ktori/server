@@ -1,5 +1,5 @@
-#include "path.h"
-#include "str.h"
+#include "vhttpsl/bits/path.h"
+#include "vhttpsl/bits/str.h"
 
 #include <stdio.h>
 #include <stdlib.h>

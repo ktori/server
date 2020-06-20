@@ -3,7 +3,7 @@
 */
 
 #include "string.h"
-#include "../lib/kv.h"
+#include "vhttpsl/bits/kv.h"
 #include "../lib/http.h"
 #include "file.h"
 #include "../lib/config.h"

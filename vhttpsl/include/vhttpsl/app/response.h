@@ -4,7 +4,7 @@
 
 #pragma once
 
-struct vhttpsl_server_s
+typedef struct vhttpsl_response_s
 {
-	int socket_fd;
-};
+
+} *vhttpsl_response_t;

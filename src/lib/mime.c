@@ -1,6 +1,6 @@
-#include "str.h"
+#include "vhttpsl/bits/str.h"
 #include "config.h"
-#include "kv.h"
+#include "vhttpsl/bits/kv.h"
 
 #include <string.h>
 #include <stdio.h>

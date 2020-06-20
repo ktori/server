@@ -1,8 +1,8 @@
 #pragma once
 
-#include "lib/str.h"
+#include "vhttpsl/bits/str.h"
 #include "lib/http.h"
-#include "lib/kv.h"
+#include "vhttpsl/bits/kv.h"
 
 int
 get_client_addr(int sockfd, char **addr, int *port);

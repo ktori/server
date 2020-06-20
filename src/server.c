@@ -17,9 +17,9 @@
 #include "lib/config.h"
 #include "lib/http.h"
 #include "lib/mime.h"
-#include "lib/path.h"
+#include "vhttpsl/bits/path.h"
 #include "server.h"
-#include "lib/url.h"
+#include "vhttpsl/http/url.h"
 #include "serve/serve.h"
 #include <conf/config.h>
 
