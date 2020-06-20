@@ -23,3 +23,5 @@ endif ()
 add_subdirectory(lib/yaml)
 target_link_libraries(server yaml)
 target_include_directories(server PRIVATE lib)
+
+add_subdirectory(vhttpsl)

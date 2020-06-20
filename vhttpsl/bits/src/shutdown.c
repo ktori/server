@@ -2,7 +2,7 @@
  * Created by victoria on 18.02.20.
 */
 
-#include "shutdown.h"
+#include <vhttpsl/bits/shutdown.h>
 
 #include <malloc.h>
 #include <signal.h>
@@ -12,7 +12,7 @@ volatile int exit_flag = 0;
 struct shutdown_hook_s
 {
 	void
-	(*hook)(void *);
+	(*hook)(void *, int);
 
 	void *data;
 	size_t id;
@@ -26,7 +26,7 @@ static size_t next_id = 0;
 static struct shutdown_hook_s *head = NULL;
 
 static int
-perform_shutdown()
+perform_shutdown(int sig)
 {
 	struct shutdown_hook_s *prev, *current = head;
 
@@ -35,7 +35,7 @@ perform_shutdown()
 	while (current != NULL && !current->done)
 	{
 		current->done = 1;
-		current->hook(current->data);
+		current->hook(current->data, sig);
 		if (current->next == current)
 			current->next = NULL;
 		if (current->prev == current)
@@ -53,10 +53,10 @@ perform_shutdown()
 }
 
 static void
-handler(int num)
+handler(int sig)
 {
 	exit_flag = 1;
-	perform_shutdown();
+	perform_shutdown(sig);
 }
 
 int
@@ -69,7 +69,7 @@ graceful_shutdown_install()
 }
 
 int
-graceful_shutdown_add_hook(void (*hook_fn)(void *), void *user_data, size_t *out_id)
+graceful_shutdown_add_hook(void (*hook_fn)(void *, int), void *user_data, int *out_id)
 {
 	struct shutdown_hook_s *hook = calloc(1, sizeof(struct shutdown_hook_s));
 
@@ -95,7 +95,7 @@ graceful_shutdown_add_hook(void (*hook_fn)(void *), void *user_data, size_t *out
 }
 
 int
-graceful_shutdown_undo_hook(size_t id)
+graceful_shutdown_undo_hook(int id)
 {
 	struct shutdown_hook_s *i, *found = NULL;
 

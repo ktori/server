@@ -7,14 +7,16 @@
 #include "server/server.h"
 #include "server.h"
 #include "cluster/cluster.h"
-#include "shutdown.h"
+#include "../vhttpsl/bits/include/bits/shutdown.h"
 #include "conf/servers.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <conf/config.h>
 
 #if SERVER_USE_SSL
+
 #include <openssl/ssl.h>
+
 #endif
 
 int

@@ -10,8 +10,8 @@ target_sources(server
         server.c
         options.h
         main.c
-        shutdown.c
-        shutdown.h
+        ../vhttpsl/bits/src/shutdown.c
+        ../vhttpsl/bits/include/vhttpsl/bits/shutdown.h
         )
 
 add_subdirectory(conf)
