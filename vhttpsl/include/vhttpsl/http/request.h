@@ -30,6 +30,9 @@ struct http_request_s
 int
 http_request_read(struct client_s *client, struct http_request_s *request, enum http_status *out_status);
 
+int
+http_request_init(struct http_request_s *request);
+
 void
 http_request_free(struct http_request_s *request);
 

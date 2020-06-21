@@ -30,6 +30,9 @@ void
 headers_read_begin(headers_read_state_t state);
 
 void
+headers_read_reset(headers_read_state_t state);
+
+void
 headers_read_end(headers_read_state_t state);
 
 /**
@@ -52,3 +55,8 @@ headers_write_end(headers_write_state_t state);
 
 int
 headers_write(char *buf, int size, headers_write_state_t state_ptr);
+
+/* helpers */
+
+long
+headers_get_content_length(kv_list_t headers);

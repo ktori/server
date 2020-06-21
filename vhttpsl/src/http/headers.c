@@ -6,6 +6,7 @@
 #include <string.h>
 #include <vhttpsl/http/headers.h>
 #include <assert.h>
+#include <vhttpsl/bits/str.h>
 #include "vhttpsl/http/request.h"
 #include "../../../src/def.h"
 #include "vhttpsl/bits/kv.h"
@@ -80,6 +81,8 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 		{
 			case H_BEGIN:
 				s.step = H_FIELD_NAME_BEGIN;
+				if (*current == '\r')
+					s.step = H_DONE;
 				consume = FALSE;
 				break;
 			case H_FIELD_NAME_BEGIN:
@@ -157,9 +160,10 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 				else if (crlf)
 					s.step = H_DONE;
 				else
+				{
 					s.step = H_FIELD_NAME_BEGIN;
-
-				consume = FALSE;
+					consume = FALSE;
+				}
 
 				break;
 			default:
@@ -190,7 +194,7 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 	*state_ptr = s;
 
 	if (state_ptr->step == H_ERROR)
-		return EXIT_FAILURE;
+		return -1;
 
 	return i;
 }
@@ -290,4 +294,47 @@ headers_write(char *buf, int size, headers_write_state_t state_ptr)
 	*state_ptr = state;
 
 	return i;
+}
+
+void
+headers_read_reset(headers_read_state_t state)
+{
+	state->step = H_BEGIN;
+	state->name_buf.pos_write = 0;
+	state->name_buf.pos_read = 0;
+	state->value_buf.pos_write = 0;
+	state->value_buf.pos_read = 0;
+	state->cr_flag = 0;
+}
+
+long
+headers_get_content_length(kv_list_t headers)
+{
+	kv_node_t node;
+	long result;
+	char *end_ptr;
+
+	if (!headers)
+		return -3;
+
+	node = headers->head;
+
+	while (node)
+	{
+		if (0 == stricmp("content-length", node->key))
+		{
+			result = strtol(node->value, &end_ptr, 10);
+
+			if (result == 0)
+			{
+				if (end_ptr != node->value + strlen(node->value))
+					return -1;
+			}
+
+			return result;
+		}
+		node = node->next;
+	}
+
+	return -2;
 }

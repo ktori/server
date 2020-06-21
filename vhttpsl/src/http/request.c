@@ -239,3 +239,9 @@ http_request_read(struct client_s *client, struct http_request_s *request, enum 
 
 	return EXIT_SUCCESS;
 }
+
+int
+http_request_init(struct http_request_s *request)
+{
+	return EXIT_SUCCESS;
+}
