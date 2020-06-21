@@ -4,7 +4,7 @@
 #include "server.h"
 #include "vhttpsl/http/url.h"
 #include "lib/config.h"
-#include "http/request.h"
+#include "vhttpsl/http/request.h"
 #include "server/client.h"
 
 #include <ctype.h>

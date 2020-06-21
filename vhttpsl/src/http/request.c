@@ -6,17 +6,17 @@
 #include <stdio.h>
 #include <errno.h>
 #include "vhttpsl/http/url.h"
-#include "../lib/crlf.h"
-#include "../lib/http.h"
-#include "request.h"
+#include "../../../src/lib/crlf.h"
+#include "../../../src/lib/http.h"
+#include "vhttpsl/http/request.h"
 #include "vhttpsl/bits/kv.h"
-#include "../lib/crlf.h"
+#include "../../../src/lib/crlf.h"
 #include "vhttpsl/http/url.h"
-#include "../server/client.h"
-#include "../../vhttpsl/bits/include/vhttpsl/bits/bytebuf.h"
-#include "request_line.h"
-#include "headers.h"
-#include "status.h"
+#include "../../../src/server/client.h"
+#include "vhttpsl/bits/bytebuf.h"
+#include "vhttpsl/http/request_line.h"
+#include "vhttpsl/http/headers.h"
+#include "vhttpsl/http/status.h"
 
 struct http_request_s *
 http_request_from_buffer(const char *buffer, size_t length)

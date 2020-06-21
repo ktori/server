@@ -2,8 +2,8 @@
 
 #include "vhttpsl/bits/str.h"
 #include "../lib/http.h"
-#include "../http/request.h"
-#include "../http/response.h"
+#include "vhttpsl/http/request.h"
+#include "vhttpsl/http/response.h"
 
 typedef enum http_status (*server_fn)(struct http_request_s *,
 									  struct http_response_s *);

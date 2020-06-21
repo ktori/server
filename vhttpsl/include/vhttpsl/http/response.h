@@ -3,7 +3,7 @@
 */
 #pragma once
 
-#include "../http/status.h"
+#include "status.h"
 
 struct client_s;
 

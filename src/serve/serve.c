@@ -13,8 +13,8 @@
 #include "../server.h"
 #include "cgi.h"
 #include "vhttpsl/http/url.h"
-#include "../http/request.h"
-#include "../http/response.h"
+#include "vhttpsl/http/request.h"
+#include "vhttpsl/http/response.h"
 
 #include <stdlib.h>
 #include <stdio.h>

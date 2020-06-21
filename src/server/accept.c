@@ -6,9 +6,9 @@
 #include "client.h"
 #include "../lib/http.h"
 #include "../serve/serve.h"
-#include "../http/request.h"
-#include "../http/status.h"
-#include "../http/response.h"
+#include "vhttpsl/http/request.h"
+#include "vhttpsl/http/status.h"
+#include "vhttpsl/http/response.h"
 
 #include <stdio.h>
 #include <stdlib.h>

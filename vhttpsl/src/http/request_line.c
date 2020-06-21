@@ -2,11 +2,11 @@
  * Created by victoria on 16.02.20.
 */
 
-#include "request_line.h"
-#include "request.h"
+#include "vhttpsl/http/request_line.h"
+#include "vhttpsl/http/request.h"
 #include "vhttpsl/http/url.h"
-#include "../server/client.h"
-#include "status.h"
+#include "../../../src/server/client.h"
+#include "vhttpsl/http/status.h"
 
 int
 request_line_read(struct http_request_s *request, enum http_status *out_status)

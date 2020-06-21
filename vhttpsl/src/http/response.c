@@ -4,10 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../lib/http.h"
-#include "response.h"
+#include "../../../src/lib/http.h"
+#include "vhttpsl/http/response.h"
 #include "vhttpsl/bits/kv.h"
-#include "../server/client.h"
+#include "../../../src/server/client.h"
 
 void
 http_response_free(struct http_response_s *response)

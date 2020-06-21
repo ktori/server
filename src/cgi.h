@@ -4,7 +4,7 @@
 #include "lib/http.h"
 #include "vhttpsl/bits/kv.h"
 #include "vhttpsl/bits/path.h"
-#include "http/request.h"
+#include "vhttpsl/http/request.h"
 
 struct server_config_s;
 struct http_request_s;

@@ -3,11 +3,11 @@
 */
 
 #include <errno.h>
-#include "request.h"
-#include "../def.h"
+#include "vhttpsl/http/request.h"
+#include "../../../src/def.h"
 #include "vhttpsl/bits/kv.h"
-#include "../server/client.h"
-#include "status.h"
+#include "../../../src/server/client.h"
+#include "vhttpsl/http/status.h"
 
 int
 headers_read(struct http_request_s *request, enum http_status *out_status)

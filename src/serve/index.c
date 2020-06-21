@@ -7,7 +7,7 @@
 #include "error.h"
 #include "vhttpsl/bits/path.h"
 #include "../server.h"
-#include "../http/response.h"
+#include "vhttpsl/http/response.h"
 
 #include <stdlib.h>
 #include <dirent.h>

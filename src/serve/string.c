@@ -4,7 +4,7 @@
 
 #include "vhttpsl/bits/kv.h"
 #include "../lib/http.h"
-#include "../http/response.h"
+#include "vhttpsl/http/response.h"
 #include "../lib/config.h"
 
 #include <string.h>

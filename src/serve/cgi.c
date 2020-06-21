@@ -8,8 +8,8 @@
 #include "error.h"
 #include "../exec.h"
 #include "../server.h"
-#include "../http/request.h"
-#include "../http/response.h"
+#include "vhttpsl/http/request.h"
+#include "vhttpsl/http/response.h"
 #include "../server/client.h"
 #include "../server/server.h"
 
