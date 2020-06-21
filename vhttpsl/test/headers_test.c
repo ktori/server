@@ -79,6 +79,7 @@ main()
 
 	assert(!memcmp(bytebuf_read_ptr(&write_buffer), TEST_CASE, sizeof(TEST_CASE) - 1));
 
+	bytebuf_destroy(&write_buffer);
 	headers_write_end(&write_state);
 	headers_read_end(&read_state);
 	kv_free(header_list);
