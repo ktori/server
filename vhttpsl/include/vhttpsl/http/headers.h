@@ -19,7 +19,6 @@ typedef struct headers_read_state_s
 
 typedef struct headers_write_state_s
 {
-	kv_list_t list;
 	kv_node_t it;
 	int step;
 	int string_index;

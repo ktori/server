@@ -213,7 +213,6 @@ headers_write_begin(headers_write_state_t state, kv_list_t list)
 {
 	memset(state, 0, sizeof(*state));
 
-	state->list = list;
 	state->it = list->head;
 }
 
