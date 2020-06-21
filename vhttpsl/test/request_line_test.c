@@ -25,4 +25,6 @@ main()
 	assert(request.uri);
 
 	assert(0 == strcmp(request.uri->complete, "/test/index.html"));
+
+	return 0;
 }

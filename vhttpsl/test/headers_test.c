@@ -83,4 +83,6 @@ main()
 	headers_write_end(&write_state);
 	headers_read_end(&read_state);
 	kv_free(header_list);
+
+	return 0;
 }

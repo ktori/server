@@ -129,6 +129,8 @@ vhttpsl_server_listen_https(vhttpsl_server_t server, int port)
 	return EXIT_FAILURE;
 }
 
+#define BUFFER_SIZE 256
+
 int
 vhttpsl_server_poll(vhttpsl_server_t server)
 {
@@ -189,8 +191,8 @@ vhttpsl_server_poll(vhttpsl_server_t server)
 		{
 			fprintf(stderr, "TODO: fd ready %d / %u\n", event_fd, events[i].events);
 
-			bytebuf_ensure_write(&ctx.cl->read_buffer, 128);
-			read_ln = read(event_fd, bytebuf_write_ptr(&ctx.cl->read_buffer), 128 /* TODO */);
+			bytebuf_ensure_write(&ctx.cl->read_buffer, BUFFER_SIZE);
+			read_ln = read(event_fd, bytebuf_write_ptr(&ctx.cl->read_buffer), BUFFER_SIZE);
 
 			if (read_ln < 0)
 			{
@@ -216,10 +218,6 @@ vhttpsl_server_poll(vhttpsl_server_t server)
 
 			fprintf(stdout, "read %d bytes from the client, total read = %u\n", read_ln,
 					(unsigned) ctx.cl->read_buffer.pos_write);
-
-			bytebuf_ensure_write(&ctx.cl->write_buffer, 128);
-			memset(bytebuf_write_ptr(&ctx.cl->write_buffer), 'a', 128);
-			ctx.cl->write_buffer.pos_write += 128;
 
 			while (ctx.cl->write_buffer.pos_read < ctx.cl->write_buffer.pos_write)
 			{

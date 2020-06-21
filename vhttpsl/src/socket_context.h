@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vhttpsl/bits/bytebuf.h>
+#include "http/session.h"
 
 enum socket_context_type
 {
@@ -22,6 +23,7 @@ struct client_socket_context_s
 {
 	struct socket_context_s ctx;
 
+	struct http_session_s session;
 	struct bytebuf_s read_buffer;
 	struct bytebuf_s write_buffer;
 };
