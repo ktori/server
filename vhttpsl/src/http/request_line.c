@@ -5,8 +5,6 @@
 #include "vhttpsl/http/request_line.h"
 #include "vhttpsl/http/request.h"
 #include "vhttpsl/http/url.h"
-#include "../../../src/server/client.h"
-#include "vhttpsl/http/status.h"
 
 typedef int bool;
 #define TRUE 1
@@ -57,7 +55,7 @@ http_parse_request_line(const char *buf, int size, struct http_request_s *reques
 			case RL_METHOD:
 				if (*current == ' ')
 				{
-					request->method = http_method_from_name(request_line_start, current - request_line_start);
+					request->method = http_method_from_string(request_line_start, current - request_line_start);
 					if (request->method == HTTP_METHOD_UNKNOWN)
 						current_state = RL_ERROR;
 					else

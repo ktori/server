@@ -5,20 +5,27 @@
 #include <vhttpsl/bits/minmax.h>
 
 #include "session.h"
+#include "../server.h"
+#include "../app.h"
 
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
 #include <vhttpsl/bits/kv.h>
+#include <errno.h>
+#include <vhttpsl/http/request_line.h>
 
 int
-http_session_init(http_session_t session)
+http_session_init(http_session_t session, struct vhttpsl_server_s *server)
 {
 	memset(session, 0, sizeof(*session));
+
+	session->server = server;
 
 	bytebuf_init(&session->buf_in, 256);
 	bytebuf_init(&session->buf_out, 256);
 	headers_read_begin(&session->headers_read_state);
+	bytebuf_init(&session->state.request_line_buffer, 128);
 
 	return EXIT_SUCCESS;
 }
@@ -26,6 +33,7 @@ http_session_init(http_session_t session)
 void
 http_session_destroy(http_session_t session)
 {
+	bytebuf_destroy(&session->state.request_line_buffer);
 	headers_read_end(&session->headers_read_state);
 	bytebuf_destroy(&session->buf_in);
 	bytebuf_destroy(&session->buf_out);
@@ -34,16 +42,100 @@ http_session_destroy(http_session_t session)
 int
 http_session_read(http_session_t session, char *buf, size_t size)
 {
-	const char *ptr = bytebuf_read_ptr(&session->buf_out);
-	size_t count = MIN(size, session->buf_out.pos_write - session->buf_out.pos_read);
+	size_t i = 0, remaining;
+	int retval;
+	struct http_session_write_state_s s = session->write_state;
+	response_list_node_t head = session->res_list_head;
+	http_response_t res = head ? &head->response : NULL;
 
-	if (count)
+	if (!res)
 	{
-		session->buf_out.pos_read += count;
-		memcpy(buf, ptr, count);
+		errno = EAGAIN;
+		return -1;
 	}
 
-	return count;
+	while (i < size && res && s.step != RSW_ERROR)
+	{
+		switch (s.step)
+		{
+			case RSW_BEGIN:
+				s.step = RSW_STATUS_BEGIN;
+				break;
+			case RSW_STATUS_BEGIN:
+				s.segment_length = 0;
+				s.status_string_length = snprintf(s.status_string_buffer, 64, "HTTP/%1d.%1d %03d %s",
+												  res->version_major, res->version_minor,
+												  res->status, status_message(res->status));
+				s.step = RSW_STATUS;
+				break;
+			case RSW_STATUS:
+				remaining = MIN(size - i, s.status_string_length - s.segment_length);
+				memcpy(buf + i, s.status_string_buffer + s.segment_length, remaining);
+				s.segment_length += remaining;
+				i += remaining;
+				if (s.segment_length == s.status_string_length)
+				{
+					s.step = RSW_CR;
+					if (res->headers)
+						s.next_step = RSW_HEADERS_BEGIN;
+					else if (res->body)
+						s.next_step = RSW_BODY_BEGIN;
+					else
+						s.step = RSW_END;
+				}
+				break;
+			case RSW_HEADERS_BEGIN:
+				s.step = RSW_HEADERS;
+				headers_write_begin(&s.headers_state, res->headers);
+				break;
+			case RSW_HEADERS:
+				retval = headers_write(buf + i, (int) (size - i), &s.headers_state);
+				i += retval;
+				if (retval == 0)
+				{
+					if (res->length)
+						s.step = RSW_BODY_BEGIN;
+					else
+						s.step = RSW_END;
+				}
+				break;
+			case RSW_BODY_BEGIN:
+				s.segment_length = 0;
+				s.step = RSW_BODY;
+				break;
+			case RSW_BODY:
+				remaining = MIN(size - i, res->length - s.segment_length);
+				memcpy(buf + i, res->body + s.segment_length, remaining);
+				s.segment_length += remaining;
+				i += remaining;
+				if (s.segment_length == res->length)
+					s.step = RSW_END;
+				break;
+			case RSW_CR:
+				buf[i++] = '\r';
+				s.step = RSW_LF;
+				break;
+			case RSW_LF:
+				buf[i++] = '\n';
+				s.step = s.next_step;
+				break;
+			case RSW_END:
+				s.step = RSW_CR;
+				s.next_step = RSW_END_RESET;
+				break;
+			case RSW_END_RESET:
+				session->res_list_head = head->next;
+				http_response_free(res);
+				free(head);
+				head = session->res_list_head;
+				res = head ? &head->response : NULL;
+				s.step = RSW_BEGIN;
+			case RSW_ERROR:
+				break;
+		}
+	}
+
+	return i;
 }
 
 int
@@ -55,6 +147,7 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 	int retval;
 	size_t remaining;
 	struct http_session_read_state_s s = session->state;
+	response_list_node_t res_node;
 
 	while (i < size && s.step != SWS_ERROR)
 	{
@@ -67,16 +160,25 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 				session->request = calloc(1, sizeof(*session->request));
 				s.step = SWS_REQUEST_LINE;
 				s.segment_length = 0;
+				s.request_line_buffer.pos_write = 0;
+				s.request_line_buffer.pos_read = 0;
 				break;
 			case SWS_REQUEST_LINE:
 				if (buf[i] == '\r')
 				{
+					http_parse_request_line(s.request_line_buffer.data, s.request_line_buffer.pos_write,
+											session->request);
 					s.step = SWS_CR;
 					s.next_step = SWS_HEADERS_BEGIN;
 					consume = 0;
 				}
 				else
+				{
+					bytebuf_ensure_write(&s.request_line_buffer, 1);
+					*bytebuf_write_ptr(&s.request_line_buffer) = buf[i];
+					s.request_line_buffer.pos_write++;
 					++s.segment_length;
+				}
 				break;
 			case SWS_CR:
 				if (buf[i] == '\r')
@@ -135,6 +237,14 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 				s.step = SWS_CR;
 				s.next_step = SWS_REQUEST_BEGIN;
 				printf("finished request\n");
+				/* add a response to the list */
+				res_node = calloc(1, sizeof(*res_node));
+				if (session->res_list_tail)
+					session->res_list_tail->next = res_node;
+				if (!session->res_list_head)
+					session->res_list_head = res_node;
+				session->res_list_tail = res_node;
+				vhttpsl_app_execute(session->server->app, session->request, &res_node->response);
 				break;
 			default:
 				break;

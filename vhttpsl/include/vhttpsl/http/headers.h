@@ -51,6 +51,9 @@ void
 headers_write_begin(headers_write_state_t state, kv_list_t in);
 
 void
+headers_write_reset(headers_write_state_t state);
+
+void
 headers_write_end(headers_write_state_t state);
 
 int

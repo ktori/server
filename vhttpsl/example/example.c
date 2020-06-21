@@ -4,11 +4,42 @@
 
 #include <vhttpsl/app.h>
 #include <vhttpsl/server.h>
+#include <vhttpsl/http/response.h>
+
+#include <stdio.h>
+#include <vhttpsl/http/request.h>
 
 void
-callback_root()
+callback_root(http_request_t request, http_response_t response)
 {
+	char buf[32];
+	const char *authorization;
+	kv_node_t node;
 
+	node = request->headers ? request->headers->head : NULL;
+	while (node)
+	{
+		if (0 == strcmp("Authorization", node->key))
+			break;
+		node = node->next;
+	}
+
+	response->status = HTTP_S_OK;
+	response->version_major = 1;
+	response->version_minor = 1;
+
+	response->body = calloc(512, 1);
+	snprintf(response->body, 512, "Hello, world!\n"
+								  "Request URI: %s\n"
+								  "Authorization: %s\n"
+								  "HTTP Method: %s\n", request->uri->spath, node ? node->value : "NONE",
+			 http_method_to_string(request->method));
+	response->length = strlen(response->body);
+
+	snprintf(buf, 32, "%d", (int) response->length);
+	response->headers = kv_create();
+	kv_push(response->headers, "Content-Length", buf);
+	kv_push(response->headers, "Content-Type", "text/plain");
 }
 
 int

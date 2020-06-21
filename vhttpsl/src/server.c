@@ -24,7 +24,7 @@ vhttpsl_server_create(vhttpsl_app_t app)
 {
 	vhttpsl_server_t server = calloc(1, sizeof(*server));
 
-	fprintf(stderr, "TODO: vhttpsl_server_create\n");
+	server->app = app;
 
 	return server;
 }
@@ -102,8 +102,7 @@ vhttpsl_server_listen_http(vhttpsl_server_t server, int port)
 	server->socket_fd = socket_fd;
 
 	event.events = EPOLLIN;
-	event.data.ptr = socket_context_create(socket_fd, SCT_SERVER_SOCKET).ptr;
-	((socket_context_t) event.data.ptr).sv->server = server;
+	event.data.ptr = socket_context_create(socket_fd, SCT_SERVER_SOCKET, server).ptr;
 
 	server->epoll_fd = epoll_create1(0);
 	if (server->epoll_fd < 0)
@@ -202,7 +201,7 @@ process_server_event(struct epoll_event *event)
 	struct epoll_event ev = {};
 
 	/* client has connected */
-	client_fd = accept(ctx.sv->server->socket_fd, &addr, &addr_len);
+	client_fd = accept(ctx.ctx->server->socket_fd, &addr, &addr_len);
 	if (client_fd < 0)
 	{
 		perror("accept in vhttpsl_server_poll");
@@ -213,10 +212,10 @@ process_server_event(struct epoll_event *event)
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
 	/* create client context */
-	ev.data.ptr = socket_context_create(client_fd, SCT_CLIENT_SOCKET).ptr;
+	ev.data.ptr = socket_context_create(client_fd, SCT_CLIENT_SOCKET, ctx.ctx->server).ptr;
 	ev.events = EPOLLIN;
 
-	if (epoll_ctl(ctx.sv->server->epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) < 0)
+	if (epoll_ctl(ctx.ctx->server->epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) < 0)
 	{
 		perror("epoll_ctl for client socket in vhttpsl_server_poll");
 		return EXIT_FAILURE;
@@ -272,7 +271,8 @@ client_write(socket_context_t ctx)
 	if (!ctx.cl->buf_out.count)
 	{
 		read_count = http_session_read(&ctx.cl->session, ctx.cl->buf_out.data, SOC_BUF_SIZE_OUT);
-		ctx.cl->buf_out.count += read_count;
+		if (read_count > 0)
+			ctx.cl->buf_out.count += read_count;
 	}
 
 	/* write buffered data */

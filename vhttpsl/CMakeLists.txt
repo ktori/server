@@ -29,6 +29,7 @@ target_sources(vhttpsl PRIVATE
         src/http/status.c
         src/http/session.c
         src/http/session.h
+        src/http/methods.c
         )
 target_include_directories(vhttpsl PUBLIC include)
 

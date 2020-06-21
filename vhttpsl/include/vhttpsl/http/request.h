@@ -9,10 +9,6 @@
 
 struct http_request_s
 {
-	/* context */
-	struct client_s *client;
-	struct bytebuf_s read_buffer;
-
 	/* request line */
 	enum http_method method;
 	struct uri_s *uri;
@@ -35,9 +31,3 @@ http_request_init(struct http_request_s *request);
 
 void
 http_request_free(struct http_request_s *request);
-
-const char *
-http_request_method_name(struct http_request_s *request);
-
-enum http_method
-http_method_from_name(const char *buffer, size_t length);

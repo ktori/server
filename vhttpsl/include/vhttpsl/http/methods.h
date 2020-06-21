@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <stddef.h>
+
 enum http_method
 {
 	HTTP_METHOD_UNKNOWN,
@@ -17,3 +19,9 @@ enum http_method
 	HTTP_METHOD_CUSTOM,
 	HTTP_METHOD_MAX = HTTP_METHOD_CUSTOM
 };
+
+enum http_method
+http_method_from_string(const char *buffer, size_t length);
+
+const char *
+http_method_to_string(enum http_method method);

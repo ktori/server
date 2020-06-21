@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 socket_context_t
-socket_context_create(int fd, enum socket_context_type type)
+socket_context_create(int fd, enum socket_context_type type, struct vhttpsl_server_s *server)
 {
 	socket_context_t ctx = {};
 
@@ -18,14 +18,16 @@ socket_context_create(int fd, enum socket_context_type type)
 			ctx.cl = calloc(1, sizeof(*ctx.cl));
 			ctx.ctx->fd = fd;
 			ctx.ctx->type = SCT_CLIENT_SOCKET;
+			ctx.ctx->server = server;
 
-			http_session_init(&ctx.cl->session);
+			http_session_init(&ctx.cl->session, server);
 
 			return ctx;
 		case SCT_SERVER_SOCKET:
 			ctx.sv = calloc(1, sizeof(*ctx.sv));
 			ctx.ctx->fd = fd;
 			ctx.ctx->type = SCT_SERVER_SOCKET;
+			ctx.ctx->server = server;
 
 			return ctx;
 		default:

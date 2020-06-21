@@ -16,7 +16,7 @@ http_response_free(struct http_response_s *response)
 	kv_free(response->headers);
 }
 
-int
+/*int
 http_response_write(struct http_response_s *response, struct client_s *client)
 {
 	struct kv_node_s *iter = NULL;
@@ -75,4 +75,4 @@ http_response_write(struct http_response_s *response, struct client_s *client)
 	}
 
 	return EXIT_SUCCESS;
-}
+}*/

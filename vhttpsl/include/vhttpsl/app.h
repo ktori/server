@@ -9,7 +9,10 @@
 
 typedef struct vhttpsl_app_s *vhttpsl_app_t;
 
-typedef void(*vhttpsl_callback_t)(void);
+typedef struct http_response_s *http_response_t;
+typedef struct http_request_s *http_request_t;
+
+typedef void(*vhttpsl_callback_t)(http_request_t request, http_response_t response);
 
 vhttpsl_app_t
 vhttpsl_app_create();

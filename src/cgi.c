@@ -6,6 +6,7 @@
 #include "lib/config.h"
 #include "vhttpsl/http/request.h"
 #include "server/client.h"
+#include "methods.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -146,7 +147,7 @@ cgi_prepare_environment(struct server_config_s *config,
 	/* kv_push("REMOTE_HOST", ""); */
 	kv_push(env, "REMOTE_PORT", port_s);
 	/* kv_push("REMOTE_USER", ""); */
-	method = http_request_method_name(request);
+	method = http_method_to_string(request);
 	if (method != NULL)
 		kv_push(env, "REQUEST_METHOD", method);
 	if (request->uri->scheme != NULL)

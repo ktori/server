@@ -23,6 +23,7 @@ struct socket_context_s
 {
 	int fd;
 	enum socket_context_type type;
+	vhttpsl_server_t server;
 };
 
 struct client_socket_context_s
@@ -49,8 +50,6 @@ struct client_socket_context_s
 struct server_socket_context_s
 {
 	struct socket_context_s ctx;
-
-	vhttpsl_server_t server;
 };
 
 typedef union
@@ -62,7 +61,7 @@ typedef union
 } socket_context_t;
 
 socket_context_t
-socket_context_create(int fd, enum socket_context_type type);
+socket_context_create(int fd, enum socket_context_type type, struct vhttpsl_server_s *server);
 
 void
 socket_context_destroy(socket_context_t context);
