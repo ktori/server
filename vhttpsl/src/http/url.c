@@ -1,10 +1,13 @@
 #include <vhttpsl/http/url.h>
+#include <vhttpsl/bits/kv.h>
 
 #include <assert.h>
 #include <stdlib.h>
+#include <memory.h>
 
-bool url_encode_table_whitelist[256];
-bool url_encode_table_init = FALSE;
+
+int url_encode_table_whitelist[256];
+int url_encode_table_init = 0;
 
 const char *rfc3986 =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
@@ -14,12 +17,12 @@ url_init(void)
 {
 	int i;
 
-	memset(url_encode_table_whitelist, FALSE, sizeof(url_encode_table_whitelist));
+	memset(url_encode_table_whitelist, 0, sizeof(url_encode_table_whitelist));
 	for (i = 0; i < strlen(rfc3986); ++i)
 	{
-		url_encode_table_whitelist[(int) rfc3986[i]] = TRUE;
+		url_encode_table_whitelist[(int) rfc3986[i]] = 1;
 	}
-	url_encode_table_init = TRUE;
+	url_encode_table_init = 1;
 }
 
 char *
@@ -29,14 +32,14 @@ url_encode(const char *in)
 	char *result = calloc(len * 3 + 1, 1);
 	int i, j = 0;
 
-	if (url_encode_table_init == FALSE)
+	if (!url_encode_table_init)
 	{
 		url_init();
 	}
 
 	for (i = 0; i < len; ++i)
 	{
-		if (url_encode_table_whitelist[(int) in[i]] == FALSE)
+		if (!url_encode_table_whitelist[(int) in[i]])
 		{
 			result[j++] = '%';
 			result[j++] = hextoch((in[i] & 0xF0) >> 4);
@@ -91,8 +94,8 @@ uri_make(const char *uri, size_t length)
 
 	struct uri_s *result;
 	enum read_state state;
-	bool userinfo_read = FALSE;
-	bool reading_port = FALSE;
+	int userinfo_read = 0;
+	int reading_port = 0;
 	int i;
 	int begin = 0;
 
@@ -135,18 +138,18 @@ uri_make(const char *uri, size_t length)
 		}
 		else if (state == AUTHORITY)
 		{
-			if ((uri[i] == '@') && (userinfo_read == FALSE))
+			if ((uri[i] == '@') && (!userinfo_read))
 			{
 				result->userinfo = malloc(i - begin + 1);
 				strncpy(result->userinfo, uri + begin, i - begin);
 				result->userinfo[i - begin] = '\0';
 				begin = i + 1;
-				userinfo_read = TRUE;
+				userinfo_read = 1;
 				continue;
 			}
 			if (uri[i] == ':' || uri[i] == '/' || uri[i] == '\0')
 			{
-				if (uri[i] == '/' && reading_port == TRUE)
+				if (uri[i] == '/' && reading_port)
 				{
 					result->port = malloc(i - begin + 1);
 					strncpy(result->port, uri + begin, i - begin);
@@ -156,7 +159,7 @@ uri_make(const char *uri, size_t length)
 				}
 				if (uri[i] == ':')
 				{
-					reading_port = TRUE;
+					reading_port = 1;
 				}
 				if (result->host == NULL)
 				{
@@ -164,7 +167,7 @@ uri_make(const char *uri, size_t length)
 					strncpy(result->host, uri + begin, i - begin);
 					result->host[i - begin] = '\0';
 					begin = i + 1;
-					if (reading_port == FALSE)
+					if (!reading_port)
 					{
 						begin--;
 						state = PATH;

@@ -7,4 +7,5 @@
 struct vhttpsl_server_s
 {
 	int socket_fd;
+	int epoll_fd;
 };

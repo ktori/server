@@ -25,6 +25,8 @@ main(int argc, char **argv)
 
 	vhttpsl_server_listen_http(server, 8080);
 
+	while (vhttpsl_server_poll(server) == 0);
+
 	vhttpsl_server_destroy(&server);
 
 	vhttpsl_app_destroy(&app);

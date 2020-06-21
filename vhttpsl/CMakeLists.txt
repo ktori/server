@@ -8,8 +8,19 @@ target_sources(vhttpsl PUBLIC
         include/vhttpsl/app/response.h
         include/vhttpsl/http/methods.h
         )
-target_sources(vhttpsl PRIVATE src/vhttpsl.c src/server.c src/server.h src/app.c src/app.h)
+target_sources(vhttpsl PRIVATE
+        src/vhttpsl.c
+        src/server.c
+        src/server.h
+        src/app.c
+        src/app.h
+        src/http/url.c
+        src/socket_context.h
+        src/socket_context.c
+        )
 target_include_directories(vhttpsl PUBLIC include)
 
 add_subdirectory(example)
 add_subdirectory(bits)
+
+target_link_libraries(vhttpsl bits)
