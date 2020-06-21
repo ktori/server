@@ -18,60 +18,6 @@
 #include "vhttpsl/http/headers.h"
 #include "vhttpsl/http/status.h"
 
-struct http_request_s *
-http_request_from_buffer(const char *buffer, size_t length)
-{
-	enum reading_state
-	{
-		METHOD,
-		URI,
-		VERSION_MAJOR,
-		VERSION_MINOR
-	};
-
-	struct crlf_array_s *array;
-	struct http_request_s *request;
-	struct crlf_marker_s *current;
-	char *request_line;
-	char *line;
-	int fields;
-
-	request = calloc(1, sizeof(struct http_request_s));
-	request->headers = kv_create();
-	fields = crlf_array_from_buffer((char *) buffer, length, &array);
-	if (fields < 1)
-	{
-		crlf_array_free(array);
-		return NULL;
-	}
-
-	request_line = crlf_get_string(array->first);
-
-	request->body = NULL;
-	request->length = 0;
-	current = array->first;
-	while (current != NULL)
-	{
-		line = crlf_get_string(current);
-		kv_push_from_line(request->headers, line, strlen(line), ':', TRUE);
-		free(line);
-		if (request->body != NULL)
-		{
-			request->length += (current->size + 2);
-		}
-		if (current->size == 0)
-		{
-			request->body = current->loc + 2;
-		}
-		current = current->next;
-	}
-	request->length -= 2;
-	free(request_line);
-	crlf_array_free(array);
-
-	return request;
-}
-
 void
 http_request_free(struct http_request_s *request)
 {

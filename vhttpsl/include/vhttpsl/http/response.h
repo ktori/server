@@ -9,15 +9,21 @@ struct client_s;
 
 struct http_response_s
 {
+	/* context */
+
+	/* status line */
 	enum http_status status;
+
 	int version_major;
 	int version_minor;
+	/* headers */
+	struct kv_list_s *headers;
 
+	/* body */
 	char *body;
 	unsigned long length;
-	int raw;
 
-	struct kv_list_s *headers;
+	int raw;
 };
 
 int

@@ -3,152 +3,292 @@
 */
 
 #include <errno.h>
+#include <string.h>
+#include <vhttpsl/http/headers.h>
+#include <assert.h>
 #include "vhttpsl/http/request.h"
 #include "../../../src/def.h"
 #include "vhttpsl/bits/kv.h"
 #include "../../../src/server/client.h"
 #include "vhttpsl/http/status.h"
 
-int
-headers_read(struct http_request_s *request, enum http_status *out_status)
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+enum step
 {
-	struct bytebuf_s *buf = &request->read_buffer;
+	H_ERROR,
+	H_BEGIN,
+	H_FIELD_NAME_BEGIN,
+	H_FIELD_NAME,
+	H_FIELD_SEP,
+	H_FIELD_SEP_OWS,
+	H_FIELD_VALUE_BEGIN,
+	H_FIELD_VALUE,
+	H_FIELD_VALUE_NEXT,
+	H_DONE
+};
 
-	enum state
-	{
-		H_ERROR,
-		H_BEGIN,
-		H_FIELD_NAME_BEGIN,
-		H_FIELD_NAME,
-		H_FIELD_SEP,
-		H_FIELD_SEP_OWS,
-		H_FIELD_VALUE_BEGIN,
-		H_FIELD_VALUE,
-		H_FIELD_VALUE_NEXT,
-		H_DONE
-	};
+void
+headers_read_begin(headers_read_state_t state)
+{
+	memset(state, 0, sizeof(*state));
 
-	enum state current_state = H_BEGIN;
+	state->step = H_BEGIN;
 
+	bytebuf_init(&state->name_buf, 32);
+	bytebuf_init(&state->value_buf, 64);
+}
+
+void
+headers_read_end(headers_read_state_t state)
+{
+	bytebuf_destroy(&state->name_buf);
+	bytebuf_destroy(&state->value_buf);
+}
+
+int
+headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_t out)
+{
 	size_t out_read;
 	bool cr_flag = FALSE;
-	bool set_cr_flag = FALSE;
-	size_t name_begin = 0, name_end = 0, value_begin = 0;
 	const char *current;
 	bool crlf, consume;
 
-	do
+	struct headers_read_state_s s = *state_ptr;
+
+	const char *name_begin = NULL, *value_begin = NULL;
+
+	size_t i = 0;
+
+	while (i < size && s.step != H_ERROR && s.step != H_DONE)
 	{
-		while (buf->pos_read == buf->pos_write)
-		{
-			bytebuf_ensure_write(buf, 256);
-			if (client_read_some(request->client, bytebuf_write_ptr(buf), bytebuf_write_size(buf), &out_read) !=
-				EXIT_SUCCESS)
-			{
-				if (errno == EAGAIN)
-					*out_status = HTTP_S_REQUEST_TIMEOUT;
-				else
-					*out_status = HTTP_S_BAD_REQUEST;
-				return EXIT_FAILURE;
-			}
-			if (out_read == 0)
-			{
-				*out_status = HTTP_S_BAD_REQUEST;
-				return EXIT_FAILURE;
-			}
-			buf->pos_write += out_read;
-		}
+		current = buf + i;
 
-		current = bytebuf_read_ptr(buf);
-
-		if (set_cr_flag)
+		if (s.cr_flag)
 		{
-			set_cr_flag = FALSE;
+			s.cr_flag = FALSE;
 			cr_flag = TRUE;
 		}
+
 		if (*current == '\r')
-		{
-			set_cr_flag = TRUE;
-		}
+			s.cr_flag = TRUE;
+
 		crlf = cr_flag && *current == '\n';
 		consume = TRUE;
 
-		switch (current_state)
+		switch (s.step)
 		{
 			case H_BEGIN:
-				current_state = H_FIELD_NAME_BEGIN;
+				s.step = H_FIELD_NAME_BEGIN;
 				break;
 			case H_FIELD_NAME_BEGIN:
-				name_begin = buf->pos_read;
-				current_state = H_FIELD_NAME;
+				name_begin = current;
+				s.name_buf.pos_write = 0;
+				s.name_buf.pos_read = 0;
+				s.step = H_FIELD_NAME;
 				consume = FALSE;
 				break;
 			case H_FIELD_NAME:
 				if (*current == ':')
 				{
 					consume = FALSE;
-					name_end = buf->pos_read;
-					current_state = H_FIELD_SEP;
+					if (s.name_buf.pos_read != s.name_buf.pos_write)
+					{
+						assert(name_begin);
+
+						memcpy(bytebuf_write_ptr(&s.name_buf), name_begin, s.name_buf.pos_read - s.name_buf.pos_write);
+						s.name_buf.pos_read = s.name_buf.pos_write;
+					}
+					s.step = H_FIELD_SEP;
+				}
+				else
+				{
+					if (!name_begin)
+						name_begin = current;
+					++s.name_buf.pos_read;
 				}
 				break;
 			case H_FIELD_SEP:
 				if (*current != ':')
-				{
-					*out_status = HTTP_S_BAD_REQUEST;
-					current_state = H_ERROR;
-				}
+					s.step = H_ERROR;
 				else
-				{
-					current_state = H_FIELD_SEP_OWS;
-				}
+					s.step = H_FIELD_SEP_OWS;
 				break;
 			case H_FIELD_SEP_OWS:
 				if (*current != ' ' && *current != '\t')
 				{
 					consume = FALSE;
-					current_state = H_FIELD_VALUE_BEGIN;
+					s.step = H_FIELD_VALUE_BEGIN;
 				}
 				break;
 			case H_FIELD_VALUE_BEGIN:
-				value_begin = buf->pos_read;
-				current_state = H_FIELD_VALUE;
+				value_begin = current;
+				s.value_buf.pos_read = 0;
+				s.value_buf.pos_write = 0;
+				s.step = H_FIELD_VALUE;
 				consume = FALSE;
 				break;
 			case H_FIELD_VALUE:
 				if (crlf)
 				{
-					if (buf->pos_read - 1 <= value_begin)
+					if (s.value_buf.pos_read != s.value_buf.pos_write)
 					{
-						*out_status = HTTP_S_BAD_REQUEST;
-						current_state = H_ERROR;
-						break;
+						assert(value_begin);
+
+						memcpy(bytebuf_write_ptr(&s.value_buf), value_begin,
+							   s.value_buf.pos_read - s.value_buf.pos_write);
+						s.value_buf.pos_read = s.value_buf.pos_write;
 					}
-					kv_push_n(request->headers, buf->data + name_begin, name_end - name_begin, buf->data + value_begin,
-							  buf->pos_read - value_begin - 2);
-					current_state = H_FIELD_VALUE_NEXT;
-				}
-				break;
-			case H_FIELD_VALUE_NEXT:
-				if (*current == '\r' || crlf)
-				{
-					current_state = H_DONE;
+
+					kv_push_n(out, s.name_buf.data, s.name_buf.pos_write, s.value_buf.data, s.value_buf.pos_write);
+					s.step = H_FIELD_VALUE_NEXT;
 				}
 				else
 				{
-					current_state = H_FIELD_NAME_BEGIN;
-					consume = FALSE;
+					if (value_begin)
+						value_begin = current;
+					++s.value_buf.pos_read;
 				}
+				break;
+			case H_FIELD_VALUE_NEXT:
+				if (*current == '\r')
+					break;
+				else if (crlf)
+					s.step = H_DONE;
+				else
+					s.step = H_FIELD_NAME_BEGIN;
+
+				consume = FALSE;
+
+				break;
 			default:
 				break;
 		}
 
 		if (consume)
-			request->read_buffer.pos_read += 1;
+			i += 1;
 	}
-	while (current_state != H_ERROR && current_state != H_DONE);
 
-	if (current_state == H_ERROR)
+	if (s.name_buf.pos_read != s.name_buf.pos_write)
+	{
+		assert(name_begin);
+
+		memcpy(bytebuf_write_ptr(&s.name_buf), name_begin, s.name_buf.pos_read - s.name_buf.pos_write);
+		s.name_buf.pos_read = s.name_buf.pos_write;
+	}
+
+	if (s.value_buf.pos_read != s.value_buf.pos_write)
+	{
+		assert(value_begin);
+
+		memcpy(bytebuf_write_ptr(&s.value_buf), value_begin,
+			   s.value_buf.pos_read - s.value_buf.pos_write);
+		s.value_buf.pos_read = s.value_buf.pos_write;
+	}
+
+	*state_ptr = s;
+
+	if (state_ptr->step == H_ERROR)
 		return EXIT_FAILURE;
 
-	return EXIT_SUCCESS;
+	return i;
+}
+
+enum write_step
+{
+	WS_BEGIN_FIELD,
+	WS_FIELD,
+	WS_FIELD_SEP,
+	WS_FIELD_SEP_WHITESPACE,
+	WS_BEGIN_VALUE,
+	WS_VALUE,
+	WS_CR,
+	WS_LF,
+	WS_DONE
+};
+
+void
+headers_write_begin(headers_write_state_t state)
+{
+	memset(state, 0, sizeof(*state));
+}
+
+void
+headers_write_end(headers_write_state_t state)
+{
+}
+
+int
+headers_write(char *buf, int size, headers_write_state_t state_ptr, kv_list_t in)
+{
+	int i = 0;
+	struct headers_write_state_s state = *state_ptr;
+	size_t field_len, value_len;
+	int written;
+
+	field_len = strlen(state.it->key);
+	value_len = strlen(state.it->value);
+
+	while (i < size && state.step != WS_DONE)
+	{
+		switch (state.step)
+		{
+			case WS_BEGIN_FIELD:
+				field_len = strlen(state.it->key);
+				state.string_index = 0;
+				state.step = WS_FIELD;
+				break;
+			case WS_FIELD:
+				written = MIN(field_len - state.string_index, size - i);
+				memcpy(buf, state.it->key + state.string_index, written);
+				state.string_index += written;
+				i += written;
+				if (state.string_index == field_len)
+					state.step = WS_FIELD_SEP;
+				break;
+			case WS_FIELD_SEP:
+				buf[i++] = ':';
+				state.step = WS_FIELD_SEP_WHITESPACE;
+				break;
+			case WS_FIELD_SEP_WHITESPACE:
+				buf[i++] = ' ';
+				state.step = WS_BEGIN_VALUE;
+				break;
+			case WS_BEGIN_VALUE:
+				value_len = strlen(state.it->value);
+				state.string_index = 0;
+				state.step = WS_VALUE;
+				break;
+			case WS_VALUE:
+				written = MIN(value_len - state.string_index, size - i);
+				memcpy(buf, state.it->value + state.string_index, written);
+				state.string_index += written;
+				i += written;
+				if (state.string_index == value_len)
+					state.step = WS_CR;
+				break;
+			case WS_CR:
+				buf[i++] = '\r';
+				state.step = WS_LF;
+				break;
+			case WS_LF:
+				buf[i++] = '\n';
+				if (state.it)
+				{
+					state.it = state.it->next;
+					if (state.it)
+						state.step = WS_BEGIN_FIELD;
+					else
+						state.step = WS_CR;
+				}
+				else
+					state.step = WS_DONE;
+				break;
+		}
+
+	}
+
+	*state_ptr = state;
+
+	return i;
 }

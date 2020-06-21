@@ -9,22 +9,23 @@
 
 struct http_request_s
 {
+	/* context */
 	struct client_s *client;
-	enum http_method method;
+	struct bytebuf_s read_buffer;
 
+	/* request line */
+	enum http_method method;
+	struct uri_s *uri;
 	int version_major;
 	int version_minor;
 
+	/* headers */
+	struct kv_list_s *headers;
+
+	/* body */
 	char *body;
 	int length;
-
-	struct bytebuf_s read_buffer;
-	struct uri_s *uri;
-	struct kv_list_s *headers;
 };
-
-struct http_request_s *
-http_request_from_buffer(const char *buffer, unsigned long length);
 
 int
 http_request_read(struct client_s *client, struct http_request_s *request, enum http_status *out_status);

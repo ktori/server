@@ -3,8 +3,50 @@
 */
 #pragma once
 
-enum http_status;
-struct http_request_s;
+#include <vhttpsl/bits/bytebuf.h>
+
+typedef struct kv_list_s *kv_list_t;
+typedef struct kv_node_s *kv_node_t;
+
+typedef struct headers_read_state_s
+{
+	/* enum */ int step;
+	int cr_flag;
+	struct bytebuf_s name_buf;
+	struct bytebuf_s value_buf;
+
+} *headers_read_state_t;
+
+typedef struct headers_write_state_s
+{
+	int step;
+	kv_node_t it;
+	int string_index;
+} *headers_write_state_t;
+
+void
+headers_read_begin(headers_read_state_t state);
+
+void
+headers_read_end(headers_read_state_t state);
+
+/**
+ * Read the HTTP headers from the buffer
+ * Buffer is expected to begin with at the position of the first header field
+ * @param state
+ * @return
+ * 	0 when reading is finished (CR LF CR LF reached),
+ * 	-1 if there was an error
+ * 	n number of bytes read otherwise
+ */
+int
+headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_t out);
+
+void
+headers_write_begin(headers_write_state_t state);
+
+void
+headers_write_end(headers_write_state_t state);
 
 int
-headers_read(struct http_request_s *request, enum http_status *out_status);
+headers_write(char *buf, int size, headers_write_state_t state_ptr, kv_list_t in);

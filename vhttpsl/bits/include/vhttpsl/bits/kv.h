@@ -2,22 +2,22 @@
 
 #include <stdlib.h>
 
-struct kv_node_s
+typedef struct kv_node_s
 {
 	char *key;
 	char *value;
 
 	struct kv_node_s *prev;
 	struct kv_node_s *next;
-};
+} *kv_node_t;
 
-struct kv_list_s
+typedef struct kv_list_s
 {
 	int count;
 
 	struct kv_node_s *head;
 	struct kv_node_s *tail;
-};
+} *kv_list_t;
 
 struct kv_list_s *
 kv_create(void);
