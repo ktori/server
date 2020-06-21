@@ -1,6 +1,6 @@
-//
-// Created by victoria on 21.06.2020.
-//
+/*
+ * Created by victoria on 21.06.2020.
+ */
 
 #include "socket_context.h"
 
@@ -10,7 +10,7 @@
 socket_context_t
 socket_context_create(int fd, enum socket_context_type type, struct vhttpsl_server_s *server)
 {
-	socket_context_t ctx = {};
+	socket_context_t ctx = {0};
 
 	switch (type)
 	{

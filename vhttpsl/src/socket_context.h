@@ -1,6 +1,6 @@
-//
-// Created by victoria on 21.06.2020.
-//
+/*
+ * Created by victoria on 21.06.2020.
+ */
 
 #pragma once
 
@@ -11,7 +11,7 @@
 #define SOC_BUF_SIZE_IN 256
 #define SOC_BUF_SIZE_OUT 256
 
-typedef struct vhttpsl_server_s *vhttpsl_server_t;
+struct vhttpsl_server_s;
 
 enum socket_context_type
 {
@@ -23,7 +23,7 @@ struct socket_context_s
 {
 	int fd;
 	enum socket_context_type type;
-	vhttpsl_server_t server;
+	struct vhttpsl_server_s *server;
 };
 
 struct client_socket_context_s

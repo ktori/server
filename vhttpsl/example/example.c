@@ -1,6 +1,6 @@
-//
-// Created by victoria on 20.06.2020.
-//
+/*
+ * Created by victoria on 20.06.2020.
+ */
 
 #include <vhttpsl/app.h>
 #include <vhttpsl/server.h>
@@ -13,7 +13,6 @@ void
 callback_root(http_request_t request, http_response_t response)
 {
 	char buf[32];
-	const char *authorization;
 	kv_node_t node;
 
 	node = request->headers ? request->headers->head : NULL;

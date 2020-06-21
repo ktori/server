@@ -7,7 +7,7 @@
 #include <vhttpsl/bits/bytebuf.h>
 #include <vhttpsl/http/methods.h>
 
-struct http_request_s
+typedef struct http_request_s
 {
 	/* request line */
 	enum http_method method;
@@ -21,7 +21,9 @@ struct http_request_s
 	/* body */
 	char *body;
 	int length;
-};
+} *http_request_t;
+
+struct client_s;
 
 int
 http_request_read(struct client_s *client, struct http_request_s *request, enum http_status *out_status);

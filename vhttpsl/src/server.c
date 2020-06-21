@@ -1,11 +1,12 @@
-//
-// Created by victoria on 20.06.2020.
-//
+/*
+ * Created by victoria on 20.06.2020.
+ */
 
 #include "server.h"
 #include "vhttpsl/server.h"
 #include "socket_context.h"
 
+#include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,7 +47,6 @@ vhttpsl_server_listen_http(vhttpsl_server_t server, int port)
 	char port_s[16];
 	struct addrinfo hints, *info = 0, *j;
 	int status, socket_fd;
-	in_port_t in_port;
 	int on = 1;
 	struct epoll_event event;
 
@@ -138,12 +138,13 @@ process_client_event(struct epoll_event *event);
 static int
 process_server_event(struct epoll_event *event);
 
+#define MAX_EVENTS 16
+
 int
 vhttpsl_server_poll(vhttpsl_server_t server)
 {
-	const int MAX_EVENTS = 16;
 	int event_count, i;
-	struct epoll_event events[MAX_EVENTS], event;
+	struct epoll_event events[MAX_EVENTS];
 	socket_context_t ctx;
 	/*int needs_to_write = server->needs_to_write;
 	server->needs_to_write = 0;*/
@@ -166,7 +167,7 @@ vhttpsl_server_poll(vhttpsl_server_t server)
 
 	for (i = 0; i < event_count; ++i)
 	{
-		ctx = (socket_context_t) events[i].data.ptr;
+		ctx.ptr = events[i].data.ptr;
 
 		switch (ctx.ctx->type)
 		{
@@ -194,11 +195,13 @@ vhttpsl_server_poll(vhttpsl_server_t server)
 static int
 process_server_event(struct epoll_event *event)
 {
-	socket_context_t ctx = (socket_context_t) event->data.ptr;
+	socket_context_t ctx;
 	int client_fd;
 	struct sockaddr addr;
 	socklen_t addr_len = sizeof(addr);
-	struct epoll_event ev = {};
+	struct epoll_event ev = {0};
+
+	ctx.ptr = event->data.ptr;
 
 	/* client has connected */
 	client_fd = accept(ctx.ctx->server->socket_fd, &addr, &addr_len);
@@ -265,7 +268,7 @@ client_read(socket_context_t ctx)
 static int
 client_write(socket_context_t ctx)
 {
-	int read_count = 0, write_count = 0, retval = 0;
+	int read_count = 0, write_count = 0;
 
 	/* buffer fresh data - if buffer is empty */
 	if (!ctx.cl->buf_out.count)
@@ -302,10 +305,12 @@ client_write(socket_context_t ctx)
 static int
 process_client_event(struct epoll_event *event)
 {
-	socket_context_t ctx = (socket_context_t) event->data.ptr;
+	socket_context_t ctx;
 	int retval;
 	int done_reading = 0;
 	int done_writing = 0;
+
+	ctx.ptr = event->data.ptr;
 
 	/* verify that the client is still active */
 

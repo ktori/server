@@ -1,6 +1,6 @@
-//
-// Created by victoria on 21.06.2020.
-//
+/*
+ * Created by victoria on 21.06.2020.
+ */
 
 #include <vhttpsl/http/request_line.h>
 #include <vhttpsl/http/url.h>

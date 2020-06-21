@@ -1,5 +1,7 @@
 add_library(vhttpsl)
 
+target_compile_options(vhttpsl PRIVATE -Wall -Werror -ansi -pedantic -D_POSIX_C_SOURCE=200112L)
+
 target_sources(vhttpsl PUBLIC
         include/vhttpsl.h
         include/vhttpsl/server.h
@@ -14,7 +16,6 @@ target_sources(vhttpsl PUBLIC
         include/vhttpsl/http/status.h
         )
 target_sources(vhttpsl PRIVATE
-        src/vhttpsl.c
         src/server.c
         src/server.h
         src/app.c

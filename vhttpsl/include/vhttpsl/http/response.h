@@ -7,7 +7,7 @@
 
 struct client_s;
 
-struct http_response_s
+typedef struct http_response_s
 {
 	/* context */
 
@@ -24,7 +24,7 @@ struct http_response_s
 	unsigned long length;
 
 	int raw;
-};
+} *http_response_t;
 
 int
 http_response_write(struct http_response_s *response, struct client_s *client);

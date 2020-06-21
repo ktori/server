@@ -1,6 +1,6 @@
-//
-// Created by victoria on 21.06.2020.
-//
+/*
+ * Created by victoria on 21.06.2020.
+ */
 
 #include <vhttpsl/http/headers.h>
 #include <vhttpsl/bits/kv.h>

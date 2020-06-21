@@ -1,5 +1,7 @@
 add_library(bits)
 
+target_compile_options(bits PRIVATE -Wall -Werror -ansi -pedantic -D_POSIX_C_SOURCE=200112L)
+
 target_sources(bits PUBLIC
         include/vhttpsl/bits/shutdown.h
         include/vhttpsl/bits/bytebuf.h

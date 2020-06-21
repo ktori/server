@@ -4,9 +4,7 @@
 #pragma once
 
 #include <vhttpsl/bits/bytebuf.h>
-
-typedef struct kv_list_s *kv_list_t;
-typedef struct kv_node_s *kv_node_t;
+#include <vhttpsl/bits/kv.h>
 
 typedef struct headers_read_state_s
 {

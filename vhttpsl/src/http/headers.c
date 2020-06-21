@@ -50,7 +50,6 @@ headers_read_end(headers_read_state_t state)
 int
 headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_t out)
 {
-	size_t out_read;
 	bool cr_flag = FALSE;
 	const char *current;
 	bool crlf, consume;

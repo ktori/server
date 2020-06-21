@@ -1,6 +1,6 @@
-//
-// Created by victoria on 20.06.2020.
-//
+/*
+ * Created by victoria on 20.06.2020.
+ */
 
 #pragma once
 
@@ -9,10 +9,10 @@
 
 typedef struct vhttpsl_app_s *vhttpsl_app_t;
 
-typedef struct http_response_s *http_response_t;
-typedef struct http_request_s *http_request_t;
+struct http_request_s;
+struct http_response_s;
 
-typedef void(*vhttpsl_callback_t)(http_request_t request, http_response_t response);
+typedef void(*vhttpsl_callback_t)(struct http_request_s *request, struct http_response_s *response);
 
 vhttpsl_app_t
 vhttpsl_app_create();
