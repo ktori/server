@@ -8,6 +8,10 @@
 #include "../../../src/server/client.h"
 #include "vhttpsl/http/status.h"
 
+typedef int bool;
+#define TRUE 1
+#define FALSE 0
+
 int
 request_line_read(struct http_request_s *request, enum http_status *out_status)
 {

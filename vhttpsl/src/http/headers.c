@@ -80,6 +80,7 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 		{
 			case H_BEGIN:
 				s.step = H_FIELD_NAME_BEGIN;
+				consume = FALSE;
 				break;
 			case H_FIELD_NAME_BEGIN:
 				name_begin = current;
@@ -97,7 +98,7 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 						assert(name_begin);
 
 						memcpy(bytebuf_write_ptr(&s.name_buf), name_begin, s.name_buf.pos_read - s.name_buf.pos_write);
-						s.name_buf.pos_read = s.name_buf.pos_write;
+						s.name_buf.pos_write = s.name_buf.pos_read;
 					}
 					s.step = H_FIELD_SEP;
 				}
@@ -137,15 +138,15 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 
 						memcpy(bytebuf_write_ptr(&s.value_buf), value_begin,
 							   s.value_buf.pos_read - s.value_buf.pos_write);
-						s.value_buf.pos_read = s.value_buf.pos_write;
+						s.value_buf.pos_write = s.value_buf.pos_read;
 					}
 
-					kv_push_n(out, s.name_buf.data, s.name_buf.pos_write, s.value_buf.data, s.value_buf.pos_write);
+					kv_push_n(out, s.name_buf.data, s.name_buf.pos_write, s.value_buf.data, s.value_buf.pos_write - 1);
 					s.step = H_FIELD_VALUE_NEXT;
 				}
 				else
 				{
-					if (value_begin)
+					if (!value_begin)
 						value_begin = current;
 					++s.value_buf.pos_read;
 				}
@@ -169,21 +170,21 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 			i += 1;
 	}
 
-	if (s.name_buf.pos_read != s.name_buf.pos_write)
+	if (s.name_buf.pos_write != s.name_buf.pos_read)
 	{
 		assert(name_begin);
 
 		memcpy(bytebuf_write_ptr(&s.name_buf), name_begin, s.name_buf.pos_read - s.name_buf.pos_write);
-		s.name_buf.pos_read = s.name_buf.pos_write;
+		s.name_buf.pos_write = s.name_buf.pos_read;
 	}
 
-	if (s.value_buf.pos_read != s.value_buf.pos_write)
+	if (s.value_buf.pos_write != s.value_buf.pos_read)
 	{
 		assert(value_begin);
 
 		memcpy(bytebuf_write_ptr(&s.value_buf), value_begin,
 			   s.value_buf.pos_read - s.value_buf.pos_write);
-		s.value_buf.pos_read = s.value_buf.pos_write;
+		s.value_buf.pos_write = s.value_buf.pos_read;
 	}
 
 	*state_ptr = s;
@@ -208,9 +209,12 @@ enum write_step
 };
 
 void
-headers_write_begin(headers_write_state_t state)
+headers_write_begin(headers_write_state_t state, kv_list_t list)
 {
 	memset(state, 0, sizeof(*state));
+
+	state->list = list;
+	state->it = list->head;
 }
 
 void
@@ -219,31 +223,27 @@ headers_write_end(headers_write_state_t state)
 }
 
 int
-headers_write(char *buf, int size, headers_write_state_t state_ptr, kv_list_t in)
+headers_write(char *buf, int size, headers_write_state_t state_ptr)
 {
 	int i = 0;
 	struct headers_write_state_s state = *state_ptr;
-	size_t field_len, value_len;
 	int written;
-
-	field_len = strlen(state.it->key);
-	value_len = strlen(state.it->value);
 
 	while (i < size && state.step != WS_DONE)
 	{
 		switch (state.step)
 		{
 			case WS_BEGIN_FIELD:
-				field_len = strlen(state.it->key);
+				state.field_len = strlen(state.it->key);
 				state.string_index = 0;
 				state.step = WS_FIELD;
 				break;
 			case WS_FIELD:
-				written = MIN(field_len - state.string_index, size - i);
-				memcpy(buf, state.it->key + state.string_index, written);
+				written = MIN(state.field_len - state.string_index, size - i);
+				memcpy(buf + i, state.it->key + state.string_index, written);
 				state.string_index += written;
 				i += written;
-				if (state.string_index == field_len)
+				if (state.string_index == state.field_len)
 					state.step = WS_FIELD_SEP;
 				break;
 			case WS_FIELD_SEP:
@@ -255,16 +255,16 @@ headers_write(char *buf, int size, headers_write_state_t state_ptr, kv_list_t in
 				state.step = WS_BEGIN_VALUE;
 				break;
 			case WS_BEGIN_VALUE:
-				value_len = strlen(state.it->value);
+				state.value_len = strlen(state.it->value);
 				state.string_index = 0;
 				state.step = WS_VALUE;
 				break;
 			case WS_VALUE:
-				written = MIN(value_len - state.string_index, size - i);
-				memcpy(buf, state.it->value + state.string_index, written);
+				written = MIN(state.value_len - state.string_index, size - i);
+				memcpy(buf + i, state.it->value + state.string_index, written);
 				state.string_index += written;
 				i += written;
-				if (state.string_index == value_len)
+				if (state.string_index == state.value_len)
 					state.step = WS_CR;
 				break;
 			case WS_CR:

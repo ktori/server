@@ -32,5 +32,6 @@ target_include_directories(vhttpsl PUBLIC include)
 
 add_subdirectory(example)
 add_subdirectory(bits)
+add_subdirectory(test)
 
 target_link_libraries(vhttpsl bits)

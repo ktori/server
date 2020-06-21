@@ -1,0 +1,2 @@
+add_executable(headers_test headers_test.c)
+target_link_libraries(headers_test vhttpsl bits)

@@ -233,8 +233,8 @@ http_request_read(struct client_s *client, struct http_request_s *request, enum 
 	if (request_line_read(request, out_status) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	/* read headers */
-	if (headers_read(request, out_status) != EXIT_SUCCESS)
-		return EXIT_FAILURE;
+	/*if (headers_read(request, out_status) != EXIT_SUCCESS)
+		return EXIT_FAILURE;*/
 	/* read body TODO */
 
 	return EXIT_SUCCESS;

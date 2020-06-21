@@ -19,9 +19,12 @@ typedef struct headers_read_state_s
 
 typedef struct headers_write_state_s
 {
-	int step;
+	kv_list_t list;
 	kv_node_t it;
+	int step;
 	int string_index;
+	size_t field_len;
+	size_t value_len;
 } *headers_write_state_t;
 
 void
@@ -43,10 +46,10 @@ int
 headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_t out);
 
 void
-headers_write_begin(headers_write_state_t state);
+headers_write_begin(headers_write_state_t state, kv_list_t in);
 
 void
 headers_write_end(headers_write_state_t state);
 
 int
-headers_write(char *buf, int size, headers_write_state_t state_ptr, kv_list_t in);
+headers_write(char *buf, int size, headers_write_state_t state_ptr);
