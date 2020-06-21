@@ -20,3 +20,15 @@ http_session_destroy(http_session_t session)
 {
 
 }
+
+int
+http_session_read(http_session_t session, char *buf, size_t size)
+{
+	return 0;
+}
+
+int
+http_session_write(http_session_t session, const char *buf, size_t size)
+{
+	return 0;
+}

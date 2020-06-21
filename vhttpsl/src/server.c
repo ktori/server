@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <conf/config.h>
 #include <errno.h>
+#include <assert.h>
 
 vhttpsl_server_t
 vhttpsl_server_create(vhttpsl_app_t app)
@@ -102,6 +103,7 @@ vhttpsl_server_listen_http(vhttpsl_server_t server, int port)
 
 	event.events = EPOLLIN;
 	event.data.ptr = socket_context_create(socket_fd, SCT_SERVER_SOCKET).ptr;
+	((socket_context_t) event.data.ptr).sv->server = server;
 
 	server->epoll_fd = epoll_create1(0);
 	if (server->epoll_fd < 0)
@@ -131,22 +133,27 @@ vhttpsl_server_listen_https(vhttpsl_server_t server, int port)
 
 #define BUFFER_SIZE 256
 
+static int
+process_client_event(struct epoll_event *event);
+
+static int
+process_server_event(struct epoll_event *event);
+
 int
 vhttpsl_server_poll(vhttpsl_server_t server)
 {
 	const int MAX_EVENTS = 16;
-	int event_count, i, client_fd, read_ln, event_fd;
+	int event_count, i;
 	struct epoll_event events[MAX_EVENTS], event;
-	struct sockaddr addr;
-	socklen_t addr_len;
 	socket_context_t ctx;
-	int needs_to_write = 0;
+	/*int needs_to_write = server->needs_to_write;
+	server->needs_to_write = 0;*/
 
-	if (server->needs_to_write)
+/*	if (needs_to_write)
 	{
 		event.events |= (unsigned) EPOLLOUT;
 		epoll_ctl(server->epoll_fd, EPOLL_CTL_MOD, server->socket_fd, &event);
-	}
+	}*/
 
 	memset(events, 0, sizeof(events));
 
@@ -161,98 +168,164 @@ vhttpsl_server_poll(vhttpsl_server_t server)
 	for (i = 0; i < event_count; ++i)
 	{
 		ctx = (socket_context_t) events[i].data.ptr;
-		event_fd = ctx.ctx->fd;
 
-		if (event_fd == server->socket_fd)
+		switch (ctx.ctx->type)
 		{
-			/* client has connected */
-			client_fd = accept(server->socket_fd, &addr, &addr_len);
-			if (client_fd < 0)
-			{
-				perror("accept in vhttpsl_server_poll");
-
-				return EXIT_FAILURE;
-			}
-
-			fprintf(stdout, "client has connected: %d\n", client_fd);
-			fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-			event.data.ptr = socket_context_create(client_fd, SCT_CLIENT_SOCKET).ptr;
-			event.events = EPOLLIN;
-
-			if (epoll_ctl(server->epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0)
-			{
-				perror("epoll_ctl for client socket in vhttpsl_server_poll");
-
-				return EXIT_FAILURE;
-			}
-		}
-		else
-		{
-			fprintf(stderr, "TODO: fd ready %d / %u\n", event_fd, events[i].events);
-
-			bytebuf_ensure_write(&ctx.cl->read_buffer, BUFFER_SIZE);
-			read_ln = read(event_fd, bytebuf_write_ptr(&ctx.cl->read_buffer), BUFFER_SIZE);
-
-			if (read_ln < 0)
-			{
-				perror("read()");
-
-				socket_context_destroy(ctx);
-				close(event_fd);
-
-				continue;
-			}
-
-			if (read_ln == 0)
-			{
-				fprintf(stderr, "TODO: client %d has disconnected\n", event_fd);
-
-				socket_context_destroy(ctx);
-				close(event_fd);
-
-				continue;
-			}
-
-			ctx.cl->read_buffer.pos_write += read_ln;
-
-			fprintf(stdout, "read %d bytes from the client, total read = %u\n", read_ln,
-					(unsigned) ctx.cl->read_buffer.pos_write);
-
-			while (ctx.cl->write_buffer.pos_read < ctx.cl->write_buffer.pos_write)
-			{
-				read_ln = write(event_fd, bytebuf_read_ptr(&ctx.cl->write_buffer),
-								ctx.cl->write_buffer.pos_write - ctx.cl->write_buffer.pos_read);
-
-				if (read_ln < 0)
-				{
-					if (errno == EAGAIN || errno == EWOULDBLOCK)
-						needs_to_write = 1;
-					else
-						perror("write()");
-
-					continue;
-				}
-				if (read_ln == 0)
-				{
-					needs_to_write = 1;
-
-					break;
-				}
-
-				ctx.cl->write_buffer.pos_read += read_ln;
-			}
-
-			/* TODO */
+			case SCT_SERVER_SOCKET:
+				process_server_event(events + i);
+				break;
+			case SCT_CLIENT_SOCKET:
+				process_client_event(events + i);
+				break;
+			default:
+				fprintf(stderr, "unknown type in vhttpsl_server_poll: %d\n", ctx.ctx->type);
+				break;
 		}
 	}
 
-	if (!needs_to_write && server->needs_to_write)
+/*	if (needs_to_write && !server->needs_to_write)
 	{
-		server->needs_to_write = 0;
 		event.events &= ~(unsigned) EPOLLOUT;
 		epoll_ctl(server->epoll_fd, EPOLL_CTL_MOD, server->socket_fd, &event);
+	}*/
+
+	return EXIT_SUCCESS;
+}
+
+static int
+process_server_event(struct epoll_event *event)
+{
+	socket_context_t ctx = (socket_context_t) event->data.ptr;
+	int client_fd;
+	struct sockaddr addr;
+	socklen_t addr_len;
+	struct epoll_event ev = {};
+
+	/* client has connected */
+	client_fd = accept(ctx.sv->server->socket_fd, &addr, &addr_len);
+	if (client_fd < 0)
+	{
+		perror("accept in vhttpsl_server_poll");
+		return EXIT_FAILURE;
 	}
+
+	fprintf(stdout, "client has connected: %d\n", client_fd);
+	fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+	/* create client context */
+	ev.data.ptr = socket_context_create(client_fd, SCT_CLIENT_SOCKET).ptr;
+	ev.events = EPOLLIN;
+
+	if (epoll_ctl(ctx.sv->server->epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) < 0)
+	{
+		perror("epoll_ctl for client socket in vhttpsl_server_poll");
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+static int
+client_read(socket_context_t ctx)
+{
+	int read_count = 0, retval = 0;
+
+	/* buffer fresh data - if buffer is empty */
+	if (!ctx.cl->buf_in.count)
+	{
+		read_count = read(ctx.ctx->fd, ctx.cl->buf_in.data, SOC_BUF_SIZE_IN);
+		if (read_count > 0)
+			ctx.cl->buf_in.count += read_count;
+	}
+
+	/* process buffered data */
+	if (ctx.cl->buf_in.count)
+	{
+		retval = http_session_write(&ctx.cl->session, ctx.cl->buf_in.data + ctx.cl->buf_in.offset,
+									ctx.cl->buf_in.count - ctx.cl->buf_in.offset);
+		if (retval > 0)
+			ctx.cl->buf_in.offset += retval;
+		if (ctx.cl->buf_in.offset == ctx.cl->buf_in.count)
+		{
+			ctx.cl->buf_in.count = 0;
+			ctx.cl->buf_in.offset = 0;
+		}
+	}
+
+	/* check for read errors */
+	if (read_count < 0)
+	{
+		perror("reading from client socket");
+		return read_count;
+	}
+
+	return retval;
+}
+
+static int
+client_write(socket_context_t ctx)
+{
+	int read_count = 0, write_count = 0, retval = 0;
+
+	/* buffer fresh data - if buffer is empty */
+	if (!ctx.cl->buf_out.count)
+	{
+		read_count = http_session_read(&ctx.cl->session, ctx.cl->buf_out.data, SOC_BUF_SIZE_OUT);
+		ctx.cl->buf_out.count += read_count;
+	}
+
+	/* write buffered data */
+	if (ctx.cl->buf_out.count)
+	{
+		write_count = write(ctx.ctx->fd, ctx.cl->buf_out.data + ctx.cl->buf_out.offset,
+							ctx.cl->buf_out.count - ctx.cl->buf_out.offset);
+		if (write_count > 0)
+			ctx.cl->buf_out.offset += write_count;
+		if (ctx.cl->buf_out.offset == ctx.cl->buf_out.count)
+		{
+			ctx.cl->buf_out.count = 0;
+			ctx.cl->buf_out.offset = 0;
+		}
+	}
+
+	/* check for write errors */
+	if (write_count < 0)
+	{
+		perror("writing to client socket");
+		return write_count;
+	}
+
+	return write_count;
+}
+
+static int
+process_client_event(struct epoll_event *event)
+{
+	socket_context_t ctx = (socket_context_t) event->data.ptr;
+	int retval;
+	int done_reading = 0;
+	int done_writing = 0;
+
+	/* verify that the client is still active */
+
+	do
+	{
+		/* read data and pass it to the session */
+		if (!done_reading)
+		{
+			retval = client_read(ctx);
+			if (retval < 0)
+				return EXIT_FAILURE;
+			done_reading = !retval;
+		}
+
+		/* write data from the session */
+		retval = client_write(ctx);
+		if (retval < 0)
+			return EXIT_FAILURE;
+		done_writing = !retval;
+	}
+	while (!done_reading || !done_writing);
 
 	return EXIT_SUCCESS;
 }

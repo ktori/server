@@ -5,7 +5,13 @@
 #pragma once
 
 #include <vhttpsl/bits/bytebuf.h>
+
 #include "http/session.h"
+
+#define SOC_BUF_SIZE_IN 256
+#define SOC_BUF_SIZE_OUT 256
+
+typedef struct vhttpsl_server_s *vhttpsl_server_t;
 
 enum socket_context_type
 {
@@ -24,13 +30,27 @@ struct client_socket_context_s
 	struct socket_context_s ctx;
 
 	struct http_session_s session;
-	struct bytebuf_s read_buffer;
-	struct bytebuf_s write_buffer;
+
+	struct
+	{
+		char data[SOC_BUF_SIZE_IN];
+		size_t count;
+		size_t offset;
+	} buf_in;
+
+	struct
+	{
+		char data[SOC_BUF_SIZE_OUT];
+		size_t count;
+		size_t offset;
+	} buf_out;
 };
 
 struct server_socket_context_s
 {
 	struct socket_context_s ctx;
+
+	vhttpsl_server_t server;
 };
 
 typedef union

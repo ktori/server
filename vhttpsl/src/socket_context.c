@@ -19,8 +19,6 @@ socket_context_create(int fd, enum socket_context_type type)
 			ctx.ctx->fd = fd;
 			ctx.ctx->type = SCT_CLIENT_SOCKET;
 
-			bytebuf_init(&ctx.cl->read_buffer, 256);
-			bytebuf_init(&ctx.cl->write_buffer, 512);
 			http_session_init(&ctx.cl->session);
 
 			return ctx;
@@ -46,8 +44,6 @@ socket_context_destroy(socket_context_t context)
 	{
 		case SCT_CLIENT_SOCKET:
 			http_session_destroy(&context.cl->session);
-			bytebuf_destroy(&context.cl->read_buffer);
-			bytebuf_destroy(&context.cl->write_buffer);
 
 			break;
 		case SCT_SERVER_SOCKET:
