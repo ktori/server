@@ -198,7 +198,7 @@ process_server_event(struct epoll_event *event)
 	socket_context_t ctx = (socket_context_t) event->data.ptr;
 	int client_fd;
 	struct sockaddr addr;
-	socklen_t addr_len;
+	socklen_t addr_len = sizeof(addr);
 	struct epoll_event ev = {};
 
 	/* client has connected */
@@ -255,7 +255,8 @@ client_read(socket_context_t ctx)
 	/* check for read errors */
 	if (read_count < 0)
 	{
-		perror("reading from client socket");
+		if (errno != EAGAIN && errno != EWOULDBLOCK)
+			perror("reading from client socket");
 		return read_count;
 	}
 
