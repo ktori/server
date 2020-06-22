@@ -124,6 +124,8 @@ http_session_read(http_session_t session, char *buf, size_t size)
 				s.next_step = RSW_END_RESET;
 				break;
 			case RSW_END_RESET:
+				if (head == session->res_list_tail)
+					session->res_list_tail = NULL;
 				session->res_list_head = head->next;
 				http_response_free(res);
 				free(head);
