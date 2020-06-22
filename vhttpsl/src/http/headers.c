@@ -154,16 +154,8 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 				}
 				break;
 			case H_FIELD_VALUE_NEXT:
-				if (*current == '\r')
-					break;
-				else if (crlf)
-					s.step = H_DONE;
-				else
-				{
-					s.step = H_FIELD_NAME_BEGIN;
-					consume = FALSE;
-				}
-
+				s.step = H_BEGIN;
+				consume = FALSE;
 				break;
 			default:
 				break;
