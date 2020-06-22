@@ -37,6 +37,13 @@ http_session_destroy(http_session_t session)
 	headers_read_end(&session->headers_read_state);
 	bytebuf_destroy(&session->buf_in);
 	bytebuf_destroy(&session->buf_out);
+
+	if (session->request)
+	{
+		http_request_free(session->request);
+		free(session->request);
+	}
+	headers_write_end(&session->write_state.headers_state);
 }
 
 int
@@ -159,6 +166,11 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 		{
 			case SWS_REQUEST_BEGIN:
 				consume = 0;
+				if (session->request)
+				{
+					http_request_free(session->request);
+					free(session->request);
+				}
 				session->request = calloc(1, sizeof(*session->request));
 				s.step = SWS_REQUEST_LINE;
 				s.segment_length = 0;
@@ -238,7 +250,6 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 				consume = 0;
 				s.step = SWS_CR;
 				s.next_step = SWS_REQUEST_BEGIN;
-				printf("finished request\n");
 				/* add a response to the list */
 				res_node = calloc(1, sizeof(*res_node));
 				if (session->res_list_tail)

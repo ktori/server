@@ -173,7 +173,7 @@ http_parse_request_line(const char *buf, int size, struct http_request_s *reques
 		if (consume)
 			current += 1;
 	}
-	while ((current <= buf + size) && current_state != RL_ERROR && current_state != RL_DONE);
+	while ((current < buf + size) && current_state != RL_ERROR && current_state != RL_DONE);
 
 	if (current_state != RL_DONE)
 		return EXIT_FAILURE;

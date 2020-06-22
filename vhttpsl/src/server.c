@@ -309,10 +309,9 @@ process_client_event(struct epoll_event *event)
 	int retval;
 	int done_reading = 0;
 	int done_writing = 0;
+	int eof_read = 0;
 
 	ctx.ptr = event->data.ptr;
-
-	/* verify that the client is still active */
 
 	do
 	{
@@ -321,8 +320,12 @@ process_client_event(struct epoll_event *event)
 		{
 			retval = client_read(ctx);
 			if (retval < 0)
-				return EXIT_FAILURE;
-			done_reading = !retval;
+			{
+				if (errno != EAGAIN && errno != EWOULDBLOCK)
+					return EXIT_FAILURE;
+			}
+			eof_read = !retval;
+			done_reading = retval <= 0;
 		}
 
 		/* write data from the session */
@@ -332,6 +335,15 @@ process_client_event(struct epoll_event *event)
 		done_writing = !retval;
 	}
 	while (!done_reading || !done_writing);
+
+	/* verify that the client is still active */
+	if (eof_read)
+	{
+		printf("client %d: closing connection\n", ctx.ctx->fd);
+		epoll_ctl(ctx.ctx->server->epoll_fd, EPOLL_CTL_DEL, ctx.ctx->fd, NULL);
+		close(ctx.ctx->fd);
+		socket_context_destroy(ctx);
+	}
 
 	return EXIT_SUCCESS;
 }
