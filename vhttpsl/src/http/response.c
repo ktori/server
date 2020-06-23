@@ -7,7 +7,6 @@
 #include "../../../src/lib/http.h"
 #include "vhttpsl/http/response.h"
 #include "vhttpsl/bits/kv.h"
-#include "../../../src/server/client.h"
 
 void
 http_response_free(struct http_response_s *response)

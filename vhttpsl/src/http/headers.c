@@ -10,7 +10,6 @@
 #include "vhttpsl/http/request.h"
 #include "../../../src/def.h"
 #include "vhttpsl/bits/kv.h"
-#include "../../../src/server/client.h"
 #include "vhttpsl/http/status.h"
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))

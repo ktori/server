@@ -16,7 +16,6 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <conf/config.h>
 #include <errno.h>
 #include <assert.h>
 
@@ -97,7 +96,7 @@ vhttpsl_server_listen_http(vhttpsl_server_t server, int port)
 
 	fcntl(socket_fd, F_SETFL, O_NONBLOCK);
 
-	listen(socket_fd, LISTEN_BACKLOG);
+	listen(socket_fd, 128);
 
 	server->socket_fd = socket_fd;
 
