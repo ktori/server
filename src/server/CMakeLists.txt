@@ -4,6 +4,5 @@ target_sources(server
         client.c
         server.h
         server.c
-        accept.c
         listen.c
         )

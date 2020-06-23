@@ -22,6 +22,7 @@ endif ()
 
 add_subdirectory(lib/yaml)
 
+enable_testing()
 add_subdirectory(vhttpsl)
 
 target_link_libraries(server yaml vhttpsl bits)

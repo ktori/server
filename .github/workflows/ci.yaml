@@ -20,9 +20,8 @@ jobs:
           cd build
           cmake ..
       - name: build
-        run: |
-          cd build
-          make
-      - name: test request
-        run: |
-          test/test.sh
+        run: make
+        working-directory: build
+      - name: test
+        run: make test
+        working-directory: build
