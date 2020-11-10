@@ -35,7 +35,6 @@ enum session_response_write_step
 	RSW_BODY,
 	RSW_CR,
 	RSW_LF,
-	RSW_END,
 	RSW_END_RESET,
 	RSW_ERROR
 };

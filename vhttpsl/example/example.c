@@ -2,12 +2,11 @@
  * Created by victoria on 20.06.2020.
  */
 
-#include <vhttpsl/app.h>
-#include <vhttpsl/server.h>
-#include <vhttpsl/http/response.h>
-
 #include <stdio.h>
+#include <vhttpsl/app.h>
 #include <vhttpsl/http/request.h>
+#include <vhttpsl/http/response.h>
+#include <vhttpsl/server.h>
 
 void
 callback_root(http_request_t request, http_response_t response)
@@ -28,14 +27,18 @@ callback_root(http_request_t request, http_response_t response)
 	response->version_minor = 1;
 
 	response->body = calloc(512, 1);
-	snprintf(response->body, 512, "Hello, world!\n"
-								  "Request URI: %s\n"
-								  "Authorization: %s\n"
-								  "HTTP Method: %s\n", request->uri->spath, node ? node->value : "NONE",
-			 http_method_to_string(request->method));
+	snprintf(response->body,
+		 512,
+		 "Hello, world!\n"
+		 "Request URI: %s\n"
+		 "Authorization: %s\n"
+		 "HTTP Method: %s\n",
+		 request->uri->spath,
+		 node ? node->value : "NONE",
+		 http_method_to_string(request->method));
 	response->length = strlen(response->body);
 
-	snprintf(buf, 32, "%d", (int) response->length);
+	snprintf(buf, 32, "%d", (int)response->length);
 	response->headers = kv_create();
 	kv_push(response->headers, "Content-Length", buf);
 	kv_push(response->headers, "Content-Type", "text/plain");
@@ -55,7 +58,8 @@ main(int argc, char **argv)
 
 	vhttpsl_server_listen_http(server, 8080);
 
-	while (vhttpsl_server_poll(server) == 0);
+	while (vhttpsl_server_poll(server) == 0)
+		;
 
 	vhttpsl_server_destroy(&server);
 

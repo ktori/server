@@ -88,7 +88,7 @@ http_session_read(http_session_t session, char *buf, size_t size)
 					else if (res->body)
 						s.next_step = RSW_BODY_BEGIN;
 					else
-						s.step = RSW_END;
+						s.next_step = RSW_END_RESET;
 				}
 				break;
 			case RSW_HEADERS_BEGIN:
@@ -103,7 +103,7 @@ http_session_read(http_session_t session, char *buf, size_t size)
 					if (res->length)
 						s.step = RSW_BODY_BEGIN;
 					else
-						s.step = RSW_END;
+						s.step = RSW_END_RESET;
 				}
 				break;
 			case RSW_BODY_BEGIN:
@@ -116,7 +116,7 @@ http_session_read(http_session_t session, char *buf, size_t size)
 				s.segment_length += remaining;
 				i += remaining;
 				if (s.segment_length == res->length)
-					s.step = RSW_END;
+					s.step = RSW_END_RESET;
 				break;
 			case RSW_CR:
 				buf[i++] = '\r';
@@ -125,10 +125,6 @@ http_session_read(http_session_t session, char *buf, size_t size)
 			case RSW_LF:
 				buf[i++] = '\n';
 				s.step = s.next_step;
-				break;
-			case RSW_END:
-				s.step = RSW_CR;
-				s.next_step = RSW_END_RESET;
 				break;
 			case RSW_END_RESET:
 				if (head == session->res_list_tail)
