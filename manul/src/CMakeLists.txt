@@ -1,0 +1,1 @@
+target_sources(manul PRIVATE main.c)

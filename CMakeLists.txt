@@ -24,6 +24,7 @@ add_subdirectory(lib/yaml)
 
 enable_testing()
 add_subdirectory(vhttpsl)
+add_subdirectory(manul)
 
 # target_link_libraries(server yaml vhttpsl bits)
 # target_include_directories(server PRIVATE lib)

@@ -1,5 +1,5 @@
 /*
- * Created by victoria on 20.06.2020.
+ * Created by victoria on 11/10/20.
  */
 
 #include <stdio.h>
@@ -28,14 +28,14 @@ callback_root(vhttpsl_app_t app, void *user_data, http_request_t request, http_r
 
 	response->body = calloc(512, 1);
 	snprintf(response->body,
-		 512,
-		 "Hello, world!\n"
-		 "Request URI: %s\n"
-		 "Authorization: %s\n"
-		 "HTTP Method: %s\n",
-		 request->uri->spath,
-		 node ? node->value : "NONE",
-		 http_method_to_string(request->method));
+			 512,
+			 "Hello, world!\n"
+			 "Request URI: %s\n"
+			 "Authorization: %s\n"
+			 "HTTP Method: %s\n",
+			 request->uri->spath,
+			 node ? node->value : "NONE",
+			 http_method_to_string(request->method));
 	response->length = strlen(response->body);
 
 	snprintf(buf, 32, "%d", (int)response->length);

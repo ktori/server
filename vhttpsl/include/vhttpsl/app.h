@@ -12,16 +12,18 @@ typedef struct vhttpsl_app_s *vhttpsl_app_t;
 struct http_request_s;
 struct http_response_s;
 
-typedef void(*vhttpsl_callback_t)(struct http_request_s *request, struct http_response_s *response);
+typedef void(*vhttpsl_http_callback_t)(vhttpsl_app_t app, void *user_data, struct http_request_s *request, struct http_response_s *response);
+typedef void(*vhttpsl_destroy_callback_t)(vhttpsl_app_t app, void *user_data);
+
+struct vhttpsl_callbacks_s {
+	vhttpsl_http_callback_t http;
+	vhttpsl_destroy_callback_t destroy;
+
+	void *user_data;
+};
 
 vhttpsl_app_t
-vhttpsl_app_create();
+vhttpsl_app_create(struct vhttpsl_callbacks_s callbacks);
 
 void
 vhttpsl_app_destroy(vhttpsl_app_t *app);
-
-void
-vhttpsl_app_route_add(vhttpsl_app_t app, const char *route, vhttpsl_callback_t callback);
-
-void
-vhttpsl_app_process_request(vhttpsl_app_t app, vhttpsl_app_request_t request, vhttpsl_response_t response);
