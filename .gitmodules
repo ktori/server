@@ -1,3 +1,6 @@
 [submodule "lib/yaml"]
 	path = lib/yaml
 	url = https://github.com/ktori/yaml.git
+[submodule "lib/streams"]
+	path = lib/streams
+	url = https://github.com/ktori/streams.git

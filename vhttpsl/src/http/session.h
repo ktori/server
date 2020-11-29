@@ -85,8 +85,8 @@ http_session_init(http_session_t session, struct vhttpsl_server_s *server);
 void
 http_session_destroy(http_session_t session);
 
-int
+size_t
 http_session_read(http_session_t session, char *buf, size_t size);
 
-int
+size_t
 http_session_write(http_session_t session, const char *buf, size_t size);

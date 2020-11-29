@@ -42,6 +42,7 @@ callback_root(vhttpsl_app_t app, void *user_data, http_request_t request, http_r
 	response->headers = kv_create();
 	kv_push(response->headers, "Content-Length", buf);
 	kv_push(response->headers, "Content-Type", "text/plain");
+	kv_push(response->headers, "Connection", "close");
 }
 
 int

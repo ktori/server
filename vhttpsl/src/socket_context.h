@@ -5,11 +5,11 @@
 #pragma once
 
 #include <vhttpsl/bits/bytebuf.h>
+#include <streams/buffered_pipe.h>
 
 #include "http/session.h"
 
-#define SOC_BUF_SIZE_IN 256
-#define SOC_BUF_SIZE_OUT 256
+#define SOC_BUF_SIZE 256
 
 struct vhttpsl_server_s;
 
@@ -32,19 +32,10 @@ struct client_socket_context_s
 
 	struct http_session_s session;
 
-	struct
-	{
-		char data[SOC_BUF_SIZE_IN];
-		size_t count;
-		size_t offset;
-	} buf_in;
-
-	struct
-	{
-		char data[SOC_BUF_SIZE_OUT];
-		size_t count;
-		size_t offset;
-	} buf_out;
+	struct stream_s socket_stream;
+	struct stream_s http_stream;
+	struct stream_buffered_pipe_s pipe_in;
+	struct stream_buffered_pipe_s pipe_out;
 };
 
 struct server_socket_context_s

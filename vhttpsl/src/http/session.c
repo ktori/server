@@ -46,7 +46,7 @@ http_session_destroy(http_session_t session)
 	headers_write_end(&session->write_state.headers_state);
 }
 
-int
+size_t
 http_session_read(http_session_t session, char *buf, size_t size)
 {
 	size_t i = 0, remaining;
@@ -143,7 +143,7 @@ http_session_read(http_session_t session, char *buf, size_t size)
 	return i;
 }
 
-int
+size_t
 http_session_write(http_session_t session, const char *buf, size_t size)
 {
 	char *ptr;

@@ -6,6 +6,9 @@
 #include "vhttpsl/server.h"
 #include "socket_context.h"
 
+#include <streams/streams.h>
+#include <streams/backend/fd.h>
+#include <streams/buffered_pipe.h>
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -227,113 +230,44 @@ process_server_event(struct epoll_event *event)
 }
 
 static int
-client_read(socket_context_t ctx)
-{
-	int read_count = 0, retval = 0;
-
-	/* buffer fresh data - if buffer is empty */
-	if (!ctx.cl->buf_in.count)
-	{
-		read_count = read(ctx.ctx->fd, ctx.cl->buf_in.data, SOC_BUF_SIZE_IN);
-		if (read_count > 0)
-			ctx.cl->buf_in.count += read_count;
-	}
-
-	/* process buffered data */
-	if (ctx.cl->buf_in.count)
-	{
-		retval = http_session_write(&ctx.cl->session, ctx.cl->buf_in.data + ctx.cl->buf_in.offset,
-									ctx.cl->buf_in.count - ctx.cl->buf_in.offset);
-		if (retval > 0)
-			ctx.cl->buf_in.offset += retval;
-		if (ctx.cl->buf_in.offset == ctx.cl->buf_in.count)
-		{
-			ctx.cl->buf_in.count = 0;
-			ctx.cl->buf_in.offset = 0;
-		}
-	}
-
-	/* check for read errors */
-	if (read_count < 0)
-	{
-		if (errno != EAGAIN && errno != EWOULDBLOCK)
-			perror("reading from client socket");
-		return read_count;
-	}
-
-	return retval;
-}
-
-static int
-client_write(socket_context_t ctx)
-{
-	int read_count = 0, write_count = 0;
-
-	/* buffer fresh data - if buffer is empty */
-	if (!ctx.cl->buf_out.count)
-	{
-		read_count = http_session_read(&ctx.cl->session, ctx.cl->buf_out.data, SOC_BUF_SIZE_OUT);
-		if (read_count > 0)
-			ctx.cl->buf_out.count += read_count;
-	}
-
-	/* write buffered data */
-	if (ctx.cl->buf_out.count)
-	{
-		write_count = write(ctx.ctx->fd, ctx.cl->buf_out.data + ctx.cl->buf_out.offset,
-							ctx.cl->buf_out.count - ctx.cl->buf_out.offset);
-		if (write_count > 0)
-			ctx.cl->buf_out.offset += write_count;
-		if (ctx.cl->buf_out.offset == ctx.cl->buf_out.count)
-		{
-			ctx.cl->buf_out.count = 0;
-			ctx.cl->buf_out.offset = 0;
-		}
-	}
-
-	/* check for write errors */
-	if (write_count < 0)
-	{
-		perror("writing to client socket");
-		return write_count;
-	}
-
-	return write_count;
-}
-
-static int
 process_client_event(struct epoll_event *event)
 {
 	socket_context_t ctx;
-	int retval;
-	int done_reading = 0;
-	int done_writing = 0;
 	int eof_read = 0;
 
 	ctx.ptr = event->data.ptr;
 
-	do
-	{
-		/* read data and pass it to the session */
-		if (!done_reading)
-		{
-			retval = client_read(ctx);
-			if (retval < 0)
-			{
-				if (errno != EAGAIN && errno != EWOULDBLOCK)
-					return EXIT_FAILURE;
-			}
-			eof_read = !retval;
-			done_reading = retval <= 0;
-		}
-
-		/* write data from the session */
-		retval = client_write(ctx);
-		if (retval < 0)
-			return EXIT_FAILURE;
-		done_writing = !retval;
+	switch (stream_buffered_pipe_pass(&ctx.cl->pipe_in)) {
+		case EXIT_SUCCESS:
+			eof_read = 1;
+		case PIPE_READ_ERROR:
+			if (errno != EAGAIN)
+				perror("request: socket read error");
+			break;
+		case PIPE_WRITE_ERROR:
+			if (errno != EAGAIN)
+				perror("request: application write error");
+			break;
+		default:
+			perror("request: unknown IO error");
+			break;
 	}
-	while (!done_reading || !done_writing);
+
+	switch (stream_buffered_pipe_pass(&ctx.cl->pipe_out)) {
+		case EXIT_SUCCESS:
+			eof_read = 1;
+		case PIPE_READ_ERROR:
+			if (errno != EAGAIN)
+				perror("response: application read error");
+			break;
+		case PIPE_WRITE_ERROR:
+			if (errno != EAGAIN)
+				perror("response: socket write error");
+			break;
+		default:
+			perror("response: unknown IO error");
+			break;
+	}
 
 	/* verify that the client is still active */
 	if (eof_read)

@@ -21,6 +21,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # endif ()
 
 add_subdirectory(lib/yaml)
+add_subdirectory(lib/streams)
 
 enable_testing()
 add_subdirectory(vhttpsl)

@@ -1,5 +1,7 @@
 add_library(vhttpsl)
 
+find_package(OpenSSL REQUIRED)
+
 target_compile_options(vhttpsl PRIVATE -Wall -Werror -ansi -pedantic -D_POSIX_C_SOURCE=200112L)
 
 target_sources(vhttpsl PUBLIC
@@ -38,4 +40,4 @@ add_subdirectory(example)
 add_subdirectory(bits)
 add_subdirectory(test)
 
-target_link_libraries(vhttpsl bits)
+target_link_libraries(vhttpsl bits streams OpenSSL::SSL OpenSSL::Crypto)
