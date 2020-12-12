@@ -15,5 +15,5 @@ cgi:
 errors:
   404: www/404.html
 ssl:
-  cert: conf/cert.pem
-  key:  conf/key.pem
+  cert: conf/ssl/cert.pem
+  key:  conf/ssl/key.pem

@@ -5,7 +5,6 @@
 #include <vhttpsl/bits/minmax.h>
 
 #include "session.h"
-#include "../server.h"
 #include "../app.h"
 
 #include <stdlib.h>
@@ -16,11 +15,11 @@
 #include <vhttpsl/http/request_line.h>
 
 int
-http_session_init(http_session_t session, struct vhttpsl_server_s *server)
+http_session_init(http_session_t session, struct vhttpsl_app_s *app)
 {
 	memset(session, 0, sizeof(*session));
 
-	session->server = server;
+	session->app = app;
 
 	bytebuf_init(&session->buf_in, 256);
 	bytebuf_init(&session->buf_out, 256);
@@ -253,7 +252,7 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 				if (!session->res_list_head)
 					session->res_list_head = res_node;
 				session->res_list_tail = res_node;
-				vhttpsl_app_execute(session->server->app, session->request, &res_node->response);
+				vhttpsl_app_execute(session->app, session->request, &res_node->response);
 				break;
 			default:
 				break;

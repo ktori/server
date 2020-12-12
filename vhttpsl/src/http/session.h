@@ -72,7 +72,7 @@ typedef struct http_session_s
 	struct http_session_read_state_s state;
 	struct headers_read_state_s headers_read_state;
 	struct http_request_s *request;
-	struct vhttpsl_server_s *server;
+	struct vhttpsl_app_s *app;
 	struct http_session_write_state_s write_state;
 
 	response_list_node_t res_list_head;
@@ -80,7 +80,7 @@ typedef struct http_session_s
 } *http_session_t;
 
 int
-http_session_init(http_session_t session, struct vhttpsl_server_s *server);
+http_session_init(http_session_t session, struct vhttpsl_app_s *app);
 
 void
 http_session_destroy(http_session_t session);

@@ -9,6 +9,7 @@ target_sources(bits PUBLIC
         include/vhttpsl/bits/kv.h
         include/vhttpsl/bits/path.h
         include/vhttpsl/bits/minmax.h
+        include/vhttpsl/bits/def.h
         )
 
 target_sources(bits PRIVATE

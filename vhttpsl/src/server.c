@@ -17,11 +17,16 @@
 #include <vhttpsl/listener.h>
 
 vhttpsl_server_t
-vhttpsl_server_create(vhttpsl_app_t app)
+vhttpsl_server_create(int epoll_fd)
 {
 	vhttpsl_server_t server = calloc(1, sizeof(*server));
 
-	server->epoll_fd = epoll_create1(0);
+	server->epoll_owned = epoll_fd < 0;
+	if (server->epoll_owned)
+		server->epoll_fd = epoll_create1(0);
+	else
+		server->epoll_fd = epoll_fd;
+
 	if (server->epoll_fd < 0)
 	{
 		perror("epoll_create1()");
@@ -30,7 +35,6 @@ vhttpsl_server_create(vhttpsl_app_t app)
 		return NULL;
 	}
 
-	server->app = app;
 	server->listeners_size = 2;
 	server->listeners = calloc(server->listeners_size, sizeof(listener_t));
 
@@ -54,11 +58,12 @@ vhttpsl_server_destroy(vhttpsl_server_t *server)
 typedef struct sv_data_s
 {
 	vhttpsl_server_t server;
+	vhttpsl_app_t app;
 	SSL_CTX *ssl_ctx;
 } * sv_data_t;
 
 static sv_data_t
-sv_data_new_http(vhttpsl_server_t server)
+sv_data_new_http(vhttpsl_server_t server, vhttpsl_app_t app)
 {
 	sv_data_t result = calloc(1, sizeof(*result));
 
@@ -66,6 +71,7 @@ sv_data_new_http(vhttpsl_server_t server)
 		return NULL;
 
 	result->server = server;
+	result->app = app;
 	result->ssl_ctx = NULL;
 
 	return result;
@@ -103,7 +109,7 @@ create_ssl_ctx(const char *cert, const char *key)
 }
 
 static sv_data_t
-sv_data_new_https(vhttpsl_server_t server, const char *cert, const char *key)
+sv_data_new_https(vhttpsl_server_t server, vhttpsl_app_t app, const char *cert, const char *key)
 {
 	sv_data_t result = calloc(1, sizeof(*result));
 
@@ -111,6 +117,7 @@ sv_data_new_https(vhttpsl_server_t server, const char *cert, const char *key)
 		return NULL;
 
 	result->server = server;
+	result->app = app;
 	result->ssl_ctx = create_ssl_ctx(cert, key);
 
 	if (!result->ssl_ctx)
@@ -129,7 +136,7 @@ sv_data_new_https(vhttpsl_server_t server, const char *cert, const char *key)
 static int
 server_cl_accept(int fd, sv_data_t sv_data, client_context_t *cl_data)
 {
-	*cl_data = client_context_create(fd, sv_data->server, sv_data->ssl_ctx);
+	*cl_data = client_context_create(fd, sv_data->app, sv_data->ssl_ctx);
 
 	if (!*cl_data)
 	{
@@ -223,7 +230,7 @@ vhttpsl_server_add_listener(vhttpsl_server_t server, listener_t listener)
 }
 
 int
-vhttpsl_server_listen_http(vhttpsl_server_t server, const char *name, int port)
+vhttpsl_server_listen_http(vhttpsl_server_t server, vhttpsl_app_t app, const char *name, int port)
 {
 	listener_t listener;
 	struct listener_callbacks_s callbacks = { NULL,
@@ -232,7 +239,7 @@ vhttpsl_server_listen_http(vhttpsl_server_t server, const char *name, int port)
 											  (on_cl_close_callback_t)server_cl_close,
 											  (on_sv_destroy_callback_t)server_sv_destroy };
 
-	callbacks.sv_data = sv_data_new_http(server);
+	callbacks.sv_data = sv_data_new_http(server, app);
 
 	listener = listener_new(name, port, callbacks, server->epoll_fd);
 	if (!listener)
@@ -248,7 +255,12 @@ vhttpsl_server_listen_http(vhttpsl_server_t server, const char *name, int port)
 }
 
 int
-vhttpsl_server_listen_https(vhttpsl_server_t server, const char *name, int port, const char *cert, const char *key)
+vhttpsl_server_listen_https(vhttpsl_server_t server,
+							vhttpsl_app_t app,
+							const char *name,
+							int port,
+							const char *cert,
+							const char *key)
 {
 	listener_t listener;
 	struct listener_callbacks_s callbacks = { NULL,
@@ -257,7 +269,7 @@ vhttpsl_server_listen_https(vhttpsl_server_t server, const char *name, int port,
 											  (on_cl_close_callback_t)server_cl_close,
 											  (on_sv_destroy_callback_t)server_sv_destroy };
 
-	callbacks.sv_data = sv_data_new_https(server, cert, key);
+	callbacks.sv_data = sv_data_new_https(server, app, cert, key);
 
 	listener = listener_new(name, port, callbacks, server->epoll_fd);
 	if (!listener)

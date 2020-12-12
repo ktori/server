@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <vhttpsl/bits/str.h>
 #include "vhttpsl/http/request.h"
-#include "../../../src/def.h"
+#include <vhttpsl/bits/def.h>
 #include "vhttpsl/bits/kv.h"
 #include "vhttpsl/http/status.h"
 

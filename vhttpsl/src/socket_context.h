@@ -25,7 +25,7 @@ typedef struct client_context_s
 } *client_context_t;
 
 client_context_t
-client_context_create(int fd, struct vhttpsl_server_s *server, SSL_CTX *ssl_ctx);
+client_context_create(int fd, struct vhttpsl_app_s *app, SSL_CTX *ssl_ctx);
 
 void
 client_context_destroy(client_context_t context);

@@ -7,12 +7,11 @@
 #include <openssl/ssl.h>
 
 struct listener_s;
-struct vhttpsl_app_s;
 
 struct vhttpsl_server_s
 {
 	int epoll_fd;
-	struct vhttpsl_app_s *app;
+	int epoll_owned;
 	struct listener_s **listeners;
 	size_t listeners_size;
 	size_t listeners_count;

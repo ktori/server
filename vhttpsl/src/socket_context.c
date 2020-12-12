@@ -10,7 +10,7 @@
 #include <streams/backend/fd.h>
 
 client_context_t
-client_context_create(int fd, struct vhttpsl_server_s *server, SSL_CTX *ssl_ctx)
+client_context_create(int fd, struct vhttpsl_app_s *app, SSL_CTX *ssl_ctx)
 {
 	client_context_t cl = calloc(1, sizeof(*cl));
 
@@ -26,7 +26,7 @@ client_context_create(int fd, struct vhttpsl_server_s *server, SSL_CTX *ssl_ctx)
 		fd_backend(&cl->socket_stream.backend, fd, fd, 0);
 	}
 
-	http_session_init(&cl->session, server);
+	http_session_init(&cl->session, app);
 
 	stream_backend_init(&cl->http_stream.backend,
 						&cl->session,
