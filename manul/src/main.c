@@ -10,6 +10,7 @@
 #include <vhttpsl/ssl.h>
 #include <yaml/callbacks.h>
 #include <yaml/document/document.h>
+#include <yaml/document/kv.h>
 #include <yaml/yaml.h>
 
 void
@@ -82,6 +83,148 @@ yaml_read_file(struct yaml_s *yaml, struct document_load_ctx_s *ctx, const char 
 	return status;
 }
 
+static struct yaml_kv_s *
+yaml_kv_get_safe(struct yaml_value_s *from, const char *key, enum yaml_value_type type)
+{
+	struct yaml_kv_s *kv;
+
+	if (from->type != YVT_MAP)
+	{
+		fprintf(stderr, "could not pick key %s, wrong type %d\n", key, from->type);
+		return NULL;
+	}
+
+	kv = yaml_kv_get(&from->body.map, key);
+
+	if (!kv)
+	{
+		fprintf(stderr, "could not pick key %s, missing key\n", key);
+		return NULL;
+	}
+	if (kv->value.type != type)
+	{
+		fprintf(stderr, "could not pick key %s, unexpected type %d (expected %d)\n", key, kv->value.type, type);
+		return NULL;
+	}
+
+	return kv;
+}
+
+static int
+load_listener(struct yaml_value_s *from, vhttpsl_server_t server, vhttpsl_app_t app)
+{
+	struct yaml_kv_s *kv;
+	int port;
+	const char *cert;
+	const char *key;
+
+	kv = yaml_kv_get_safe(from, "port", YVT_INT);
+	if (!kv)
+		return EXIT_FAILURE;
+
+	port = kv->value.body.integer;
+
+	kv = yaml_kv_get_safe(from, "type", YVT_STRING);
+	if (!kv)
+		return EXIT_FAILURE;
+
+	if (!strcmp(kv->value.body.string, "http"))
+	{
+		if (vhttpsl_server_listen_http(server, app, NULL, port))
+		{
+			perror("vhttpsl_server_listen_http");
+
+			return EXIT_FAILURE;
+		}
+	}
+	else if (!strcmp(kv->value.body.string, "https"))
+	{
+		kv = yaml_kv_get_safe(from, "cert", YVT_STRING);
+		if (!kv)
+			return EXIT_FAILURE;
+		cert = kv->value.body.string;
+		kv = yaml_kv_get_safe(from, "key", YVT_STRING);
+		if (!kv)
+			return EXIT_FAILURE;
+		key = kv->value.body.string;
+
+		if (vhttpsl_server_listen_https(server, app, NULL, port, cert, key))
+		{
+			perror("vhttpsl_server_listen_https");
+
+			return EXIT_FAILURE;
+		}
+	}
+	else
+	{
+		fprintf(stderr, "listener: unknown type %s\n", kv->value.body.string);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+static vhttpsl_app_t
+app_from_map(struct yaml_value_s *map, vhttpsl_server_t server)
+{
+	struct yaml_kv_s *kv;
+	size_t i;
+	struct vhttpsl_callbacks_s callbacks = { callback_root, NULL, NULL };
+	vhttpsl_app_t app;
+
+	kv = yaml_kv_get_safe(map, "listeners", YVT_SEQUENCE);
+	if (!kv)
+		return NULL;
+
+	app = vhttpsl_app_create(callbacks);
+
+	for (i = 0; i < kv->value.body.sequence.count; ++i)
+	{
+		if (kv->value.body.sequence.values[i].type != YVT_MAP)
+		{
+			fprintf(stderr, "unexpected item type: %d at index %lu\n", kv->value.body.sequence.values[i].type, i);
+			continue;
+		}
+
+		load_listener(&kv->value.body.sequence.values[i], server, app);
+	}
+
+	return app;
+}
+
+static int
+apps_from_yaml_document(struct yaml_value_s *root, vhttpsl_server_t server)
+{
+	struct yaml_kv_s *kv;
+	size_t i;
+
+	if (root->type != YVT_MAP)
+	{
+		fprintf(stderr, "config root is not a map, got %d instead\n", root->type);
+		return EXIT_FAILURE;
+	}
+
+	kv = yaml_kv_get_safe(root, "manul", YVT_MAP);
+	if (!kv)
+		return EXIT_FAILURE;
+	kv = yaml_kv_get_safe(&kv->value, "apps", YVT_SEQUENCE);
+	if (!kv)
+		return EXIT_FAILURE;
+
+	for (i = 0; i < kv->value.body.sequence.count; ++i)
+	{
+		if (kv->value.body.sequence.values[i].type != YVT_MAP)
+		{
+			fprintf(stderr, "unexpected item type: %d at index %lu\n", kv->value.body.sequence.values[i].type, i);
+			continue;
+		}
+
+		app_from_map(&kv->value.body.sequence.values[i], server);
+	}
+
+	return EXIT_SUCCESS;
+}
+
 static void
 yaml_load_app()
 {
@@ -95,6 +238,7 @@ yaml_load_app()
 
 	if (EXIT_SUCCESS == yaml_read_file(yaml, document.ctx, "conf/manul.yaml"))
 	{
+		apps_from_yaml_document(&document.root);
 	}
 
 	yaml_document_destroy(&document);
@@ -106,7 +250,6 @@ main(int argc, char **argv)
 {
 	vhttpsl_app_t app;
 	vhttpsl_server_t server;
-	struct vhttpsl_callbacks_s callbacks = { callback_root, NULL, NULL };
 
 	yaml_load_app();
 

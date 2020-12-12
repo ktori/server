@@ -2,11 +2,10 @@ manul:
   apps:
     - name: Manul
       type: default
-      server:
-        listeners:
-          - type: http
-            port: 8080
-          - type: https
-            port: 8081
-            cert: conf/ssl/cert.pem
-            key: conf/ssl/key.pem
+      listeners:
+        - type: http
+          port: 8080
+        - type: https
+          port: 8081
+          cert: conf/ssl/cert.pem
+          key: conf/ssl/key.pem
