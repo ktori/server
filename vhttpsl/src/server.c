@@ -3,6 +3,7 @@
  */
 
 #include "server.h"
+#include "app.h"
 
 #include "socket_context.h"
 #include "vhttpsl/server.h"
@@ -50,6 +51,9 @@ vhttpsl_server_destroy(vhttpsl_server_t *server)
 
 	for (i = 0; i < (*server)->listeners_count; ++i)
 		listener_destroy((*server)->listeners[i]);
+
+	for (i = 0; i < (*server)->apps_count; ++i)
+		vhttpsl_app_destroy((*server)->apps[i]);
 
 	free(*server);
 	*server = NULL;
@@ -299,4 +303,23 @@ vhttpsl_server_poll(vhttpsl_server_t server)
 	}
 
 	return EXIT_SUCCESS;
+}
+
+vhttpsl_app_t
+vhttpsl_server_app_create(vhttpsl_server_t server, struct vhttpsl_callbacks_s callbacks)
+{
+	vhttpsl_app_t app = calloc(1, sizeof(*app));
+
+	fprintf(stderr, "TODO: vhttpsl_app_create\n");
+	app->callbacks = callbacks;
+
+	if (server->apps_count == server->apps_size)
+	{
+		server->apps_size *= 2;
+		server->apps = realloc(server->apps, server->apps_size * sizeof(vhttpsl_app_t));
+	}
+
+	server->apps[server->apps_count++] = app;
+
+	return app;
 }

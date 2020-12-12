@@ -176,7 +176,7 @@ app_from_map(struct yaml_value_s *map, vhttpsl_server_t server)
 	if (!kv)
 		return NULL;
 
-	app = vhttpsl_app_create(callbacks);
+	app = vhttpsl_server_app_create(server, callbacks);
 
 	for (i = 0; i < kv->value.body.sequence.count; ++i)
 	{
@@ -226,7 +226,7 @@ apps_from_yaml_document(struct yaml_value_s *root, vhttpsl_server_t server)
 }
 
 static void
-yaml_load_app()
+yaml_load_app(vhttpsl_server_t server)
 {
 	struct yaml_s *yaml;
 	struct yaml_document_s document;
@@ -238,7 +238,7 @@ yaml_load_app()
 
 	if (EXIT_SUCCESS == yaml_read_file(yaml, document.ctx, "conf/manul.yaml"))
 	{
-		apps_from_yaml_document(&document.root);
+		apps_from_yaml_document(&document.root, server);
 	}
 
 	yaml_document_destroy(&document);
@@ -248,26 +248,18 @@ yaml_load_app()
 int
 main(int argc, char **argv)
 {
-	vhttpsl_app_t app;
 	vhttpsl_server_t server;
-
-	yaml_load_app();
 
 	vhttpsl_init_openssl();
 
-	app = vhttpsl_app_create(callbacks);
-
 	server = vhttpsl_server_create(-1);
 
-	vhttpsl_server_listen_http(server, app, NULL, 8080);
-	vhttpsl_server_listen_https(server, app, NULL, 8081, "conf/ssl/cert.pem", "conf/ssl/key.pem");
+	yaml_load_app(server);
 
 	while (vhttpsl_server_poll(server) == 0)
 		;
 
 	vhttpsl_server_destroy(&server);
-
-	vhttpsl_app_destroy(&app);
 
 	vhttpsl_cleanup_openssl();
 

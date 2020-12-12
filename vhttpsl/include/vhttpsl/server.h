@@ -11,6 +11,9 @@ typedef struct vhttpsl_server_s *vhttpsl_server_t;
 vhttpsl_server_t
 vhttpsl_server_create(int epoll_fd);
 
+vhttpsl_app_t
+vhttpsl_server_app_create(vhttpsl_server_t server, struct vhttpsl_callbacks_s callbacks);
+
 int
 vhttpsl_server_poll(vhttpsl_server_t server);
 

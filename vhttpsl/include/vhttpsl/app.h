@@ -21,9 +21,3 @@ struct vhttpsl_callbacks_s {
 
 	void *user_data;
 };
-
-vhttpsl_app_t
-vhttpsl_app_create(struct vhttpsl_callbacks_s callbacks);
-
-void
-vhttpsl_app_destroy(vhttpsl_app_t *app);

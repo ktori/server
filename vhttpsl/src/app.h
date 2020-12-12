@@ -15,3 +15,6 @@ struct vhttpsl_app_s
 
 int
 vhttpsl_app_execute(vhttpsl_app_t app, struct http_request_s *request, struct http_response_s *response);
+
+void
+vhttpsl_app_destroy(vhttpsl_app_t app);
