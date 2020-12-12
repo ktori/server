@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <openssl/ssl.h>
 #include <vhttpsl/bits/bytebuf.h>
 #include <streams/buffered_pipe.h>
 
@@ -13,46 +14,18 @@
 
 struct vhttpsl_server_s;
 
-enum socket_context_type
+typedef struct client_context_s
 {
-	SCT_SERVER_SOCKET,
-	SCT_CLIENT_SOCKET
-};
-
-struct socket_context_s
-{
-	int fd;
-	enum socket_context_type type;
-	struct vhttpsl_server_s *server;
-};
-
-struct client_socket_context_s
-{
-	struct socket_context_s ctx;
-
 	struct http_session_s session;
 
 	struct stream_s socket_stream;
 	struct stream_s http_stream;
 	struct stream_buffered_pipe_s pipe_in;
 	struct stream_buffered_pipe_s pipe_out;
-};
+} *client_context_t;
 
-struct server_socket_context_s
-{
-	struct socket_context_s ctx;
-};
-
-typedef union
-{
-	void *ptr;
-	struct socket_context_s *ctx;
-	struct client_socket_context_s *cl;
-	struct server_socket_context_s *sv;
-} socket_context_t;
-
-socket_context_t
-socket_context_create(int fd, enum socket_context_type type, struct vhttpsl_server_s *server);
+client_context_t
+client_context_create(int fd, struct vhttpsl_server_s *server, SSL_CTX *ssl_ctx);
 
 void
-socket_context_destroy(socket_context_t context);
+client_context_destroy(client_context_t context);

@@ -16,24 +16,12 @@ target_sources(vhttpsl PUBLIC
         include/vhttpsl/http/headers.h
         include/vhttpsl/http/request_line.h
         include/vhttpsl/http/status.h
+        include/vhttpsl/ssl.h
+        include/vhttpsl/listener.h
         )
-target_sources(vhttpsl PRIVATE
-        src/server.c
-        src/server.h
-        src/app.c
-        src/app.h
-        src/http/url.c
-        src/socket_context.h
-        src/socket_context.c
-        src/http/request.c
-        src/http/headers.c
-        src/http/request_line.c
-        src/http/response.c
-        src/http/status.c
-        src/http/session.c
-        src/http/session.h
-        src/http/methods.c
-        )
+
+add_subdirectory(src)
+
 target_include_directories(vhttpsl PUBLIC include)
 
 add_subdirectory(example)

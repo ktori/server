@@ -7,6 +7,7 @@
 #include <vhttpsl/http/request.h>
 #include <vhttpsl/http/response.h>
 #include <vhttpsl/server.h>
+#include <vhttpsl/ssl.h>
 
 void
 callback_root(vhttpsl_app_t app, void *user_data, http_request_t request, http_response_t response)
@@ -52,11 +53,14 @@ main(int argc, char **argv)
 	vhttpsl_server_t server;
 	struct vhttpsl_callbacks_s callbacks = { callback_root, NULL, NULL };
 
+	vhttpsl_init_openssl();
+
 	app = vhttpsl_app_create(callbacks);
 
 	server = vhttpsl_server_create(app);
 
-	vhttpsl_server_listen_http(server, 8080);
+	vhttpsl_server_listen_http(server, NULL, 8080);
+	vhttpsl_server_listen_https(server, NULL, 8081, "conf/cert.pem", "conf/key.pem");
 
 	while (vhttpsl_server_poll(server) == 0)
 		;
@@ -64,6 +68,8 @@ main(int argc, char **argv)
 	vhttpsl_server_destroy(&server);
 
 	vhttpsl_app_destroy(&app);
+
+	vhttpsl_cleanup_openssl();
 
 	return 0;
 }

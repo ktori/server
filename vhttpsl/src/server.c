@@ -3,31 +3,36 @@
  */
 
 #include "server.h"
-#include "vhttpsl/server.h"
-#include "socket_context.h"
 
-#include <streams/streams.h>
-#include <streams/backend/fd.h>
-#include <streams/buffered_pipe.h>
-#include <sys/time.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/epoll.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include "socket_context.h"
+#include "vhttpsl/server.h"
+
 #include <errno.h>
-#include <assert.h>
+#include <openssl/err.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <streams/buffered_pipe.h>
+#include <streams/streams.h>
+#include <sys/epoll.h>
+#include <vhttpsl/listener.h>
 
 vhttpsl_server_t
 vhttpsl_server_create(vhttpsl_app_t app)
 {
 	vhttpsl_server_t server = calloc(1, sizeof(*server));
 
+	server->epoll_fd = epoll_create1(0);
+	if (server->epoll_fd < 0)
+	{
+		perror("epoll_create1()");
+		free(server);
+
+		return NULL;
+	}
+
 	server->app = app;
+	server->listeners_size = 2;
+	server->listeners = calloc(server->listeners_size, sizeof(listener_t));
 
 	return server;
 }
@@ -35,194 +40,101 @@ vhttpsl_server_create(vhttpsl_app_t app)
 void
 vhttpsl_server_destroy(vhttpsl_server_t *server)
 {
+	size_t i;
+
 	fprintf(stderr, "TODO: vhttpsl_server_destroy\n");
+
+	for (i = 0; i < (*server)->listeners_count; ++i)
+		listener_destroy((*server)->listeners[i]);
 
 	free(*server);
 	*server = NULL;
 }
 
-int
-vhttpsl_server_listen_http(vhttpsl_server_t server, int port)
+typedef struct sv_data_s
 {
-	struct timeval tv;
+	vhttpsl_server_t server;
+	SSL_CTX *ssl_ctx;
+} * sv_data_t;
 
-	char port_s[16];
-	struct addrinfo hints, *info = 0, *j;
-	int status, socket_fd;
-	int on = 1;
-	struct epoll_event event;
+static sv_data_t
+sv_data_new_http(vhttpsl_server_t server)
+{
+	sv_data_t result = calloc(1, sizeof(*result));
 
-	server->socket_fd = -1;
+	if (!result)
+		return NULL;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
+	result->server = server;
+	result->ssl_ctx = NULL;
 
-	snprintf(port_s, 16, "%d", port);
-	status = getaddrinfo(0, port_s, &hints, &info);
-	if (status != 0)
-	{
-		printf("[error] getaddrinfo returned %d\n", status);
-		return 1;
-	}
-
-	for (j = info; j != 0; j = j->ai_next)
-	{
-		socket_fd = socket(j->ai_family, j->ai_socktype, j->ai_protocol);
-		if (socket_fd < 0)
-		{
-			printf("socket() failed\n");
-			continue;
-		}
-
-		tv.tv_sec = 8;
-		tv.tv_usec = 0;
-		setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof(tv));
-		setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int));
-
-		status = bind(socket_fd, j->ai_addr, j->ai_addrlen);
-		if (status < 0)
-		{
-			perror("bind");
-			close(socket_fd);
-			continue;
-		}
-		break;
-	}
-	if (info == 0)
-	{
-		printf("no addrinfo\n");
-		return 1;
-	}
-	freeaddrinfo(info);
-
-	fcntl(socket_fd, F_SETFL, O_NONBLOCK);
-
-	listen(socket_fd, 128);
-
-	server->socket_fd = socket_fd;
-
-	event.events = EPOLLIN;
-	event.data.ptr = socket_context_create(socket_fd, SCT_SERVER_SOCKET, server).ptr;
-
-	server->epoll_fd = epoll_create1(0);
-	if (server->epoll_fd < 0)
-	{
-		perror("epoll_create1");
-		return EXIT_FAILURE;
-	}
-
-	if (epoll_ctl(server->epoll_fd, EPOLL_CTL_ADD, socket_fd, &event) < 0)
-	{
-		perror("epoll_ctl");
-		return EXIT_FAILURE;
-	}
-
-	printf("server (%d) is listening on port %d\n", server->socket_fd, port);
-
-	return EXIT_SUCCESS;
+	return result;
 }
 
-int
-vhttpsl_server_listen_https(vhttpsl_server_t server, int port)
+static SSL_CTX *
+create_ssl_ctx(const char *cert, const char *key)
 {
-	fprintf(stderr, "TODO: vhttpsl_server_listen_https\n");
+	const SSL_METHOD *method = SSLv23_server_method();
+	SSL_CTX *ctx = SSL_CTX_new(method);
 
-	return EXIT_FAILURE;
+	if (!ctx)
+	{
+		ERR_print_errors_fp(stderr);
+		return NULL;
+	}
+
+	SSL_CTX_set_ecdh_auto(ctx, 1);
+
+	if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_PEM) <= 0)
+	{
+		ERR_print_errors_fp(stderr);
+		SSL_CTX_free(ctx);
+		return NULL;
+	}
+
+	if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_PEM) <= 0)
+	{
+		ERR_print_errors_fp(stderr);
+		SSL_CTX_free(ctx);
+		return NULL;
+	}
+
+	return ctx;
 }
 
-#define BUFFER_SIZE 256
-
-static int
-process_client_event(struct epoll_event *event);
-
-static int
-process_server_event(struct epoll_event *event);
-
-#define MAX_EVENTS 16
-
-int
-vhttpsl_server_poll(vhttpsl_server_t server)
+static sv_data_t
+sv_data_new_https(vhttpsl_server_t server, const char *cert, const char *key)
 {
-	int event_count, i;
-	struct epoll_event events[MAX_EVENTS];
-	socket_context_t ctx;
-	/*int needs_to_write = server->needs_to_write;
-	server->needs_to_write = 0;*/
+	sv_data_t result = calloc(1, sizeof(*result));
 
-/*	if (needs_to_write)
+	if (!result)
+		return NULL;
+
+	result->server = server;
+	result->ssl_ctx = create_ssl_ctx(cert, key);
+
+	if (!result->ssl_ctx)
 	{
-		event.events |= (unsigned) EPOLLOUT;
-		epoll_ctl(server->epoll_fd, EPOLL_CTL_MOD, server->socket_fd, &event);
-	}*/
+		fprintf(stderr, "unable to create ssl context");
+		ERR_print_errors_fp(stderr);
 
-	memset(events, 0, sizeof(events));
+		free(result);
 
-	event_count = epoll_wait(server->epoll_fd, events, MAX_EVENTS, -1);
-	if (event_count < 0)
-	{
-		perror("epoll_wait in vhttpsl_server_poll");
-
-		return EXIT_FAILURE;
+		return NULL;
 	}
 
-	for (i = 0; i < event_count; ++i)
-	{
-		ctx.ptr = events[i].data.ptr;
-
-		switch (ctx.ctx->type)
-		{
-			case SCT_SERVER_SOCKET:
-				process_server_event(events + i);
-				break;
-			case SCT_CLIENT_SOCKET:
-				process_client_event(events + i);
-				break;
-			default:
-				fprintf(stderr, "unknown type in vhttpsl_server_poll: %d\n", ctx.ctx->type);
-				break;
-		}
-	}
-
-/*	if (needs_to_write && !server->needs_to_write)
-	{
-		event.events &= ~(unsigned) EPOLLOUT;
-		epoll_ctl(server->epoll_fd, EPOLL_CTL_MOD, server->socket_fd, &event);
-	}*/
-
-	return EXIT_SUCCESS;
+	return result;
 }
 
 static int
-process_server_event(struct epoll_event *event)
+server_cl_accept(int fd, sv_data_t sv_data, client_context_t *cl_data)
 {
-	socket_context_t ctx;
-	int client_fd;
-	struct sockaddr addr;
-	socklen_t addr_len = sizeof(addr);
-	struct epoll_event ev = {0};
+	*cl_data = client_context_create(fd, sv_data->server, sv_data->ssl_ctx);
 
-	ctx.ptr = event->data.ptr;
-
-	/* client has connected */
-	client_fd = accept(ctx.ctx->server->socket_fd, &addr, &addr_len);
-	if (client_fd < 0)
+	if (!*cl_data)
 	{
-		perror("accept in vhttpsl_server_poll");
-		return EXIT_FAILURE;
-	}
+		fprintf(stderr, "could not create client context\n");
 
-	fprintf(stdout, "client has connected: %d\n", client_fd);
-	fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-	/* create client context */
-	ev.data.ptr = socket_context_create(client_fd, SCT_CLIENT_SOCKET, ctx.ctx->server).ptr;
-	ev.events = EPOLLIN;
-
-	if (epoll_ctl(ctx.ctx->server->epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) < 0)
-	{
-		perror("epoll_ctl for client socket in vhttpsl_server_poll");
 		return EXIT_FAILURE;
 	}
 
@@ -230,14 +142,12 @@ process_server_event(struct epoll_event *event)
 }
 
 static int
-process_client_event(struct epoll_event *event)
+server_cl_event(int fd, sv_data_t sv_data, client_context_t cl_data)
 {
-	socket_context_t ctx;
 	int eof_read = 0;
 
-	ctx.ptr = event->data.ptr;
-
-	switch (stream_buffered_pipe_pass(&ctx.cl->pipe_in)) {
+	switch (stream_buffered_pipe_pass(&cl_data->pipe_in))
+	{
 		case EXIT_SUCCESS:
 			eof_read = 1;
 		case PIPE_READ_ERROR:
@@ -253,7 +163,8 @@ process_client_event(struct epoll_event *event)
 			break;
 	}
 
-	switch (stream_buffered_pipe_pass(&ctx.cl->pipe_out)) {
+	switch (stream_buffered_pipe_pass(&cl_data->pipe_out))
+	{
 		case EXIT_SUCCESS:
 			eof_read = 1;
 		case PIPE_READ_ERROR:
@@ -271,11 +182,108 @@ process_client_event(struct epoll_event *event)
 
 	/* verify that the client is still active */
 	if (eof_read)
+		return 1;
+
+	return EXIT_SUCCESS;
+}
+
+static int
+server_cl_close(int fd, sv_data_t sv_data, client_context_t cl_data)
+{
+	printf("client %d: closing connection\n", fd);
+
+	client_context_destroy(cl_data);
+
+	return EXIT_SUCCESS;
+}
+
+static int
+server_sv_destroy(sv_data_t sv_data)
+{
+	if (sv_data->ssl_ctx)
 	{
-		printf("client %d: closing connection\n", ctx.ctx->fd);
-		epoll_ctl(ctx.ctx->server->epoll_fd, EPOLL_CTL_DEL, ctx.ctx->fd, NULL);
-		close(ctx.ctx->fd);
-		socket_context_destroy(ctx);
+		SSL_CTX_free(sv_data->ssl_ctx);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+static int
+vhttpsl_server_add_listener(vhttpsl_server_t server, listener_t listener)
+{
+	if (server->listeners_size == server->listeners_count)
+	{
+		server->listeners = realloc(server->listeners, server->listeners_size * sizeof(listener_t));
+		server->listeners_size *= 2;
+	}
+
+	server->listeners[server->listeners_count++] = listener;
+
+	return EXIT_SUCCESS;
+}
+
+int
+vhttpsl_server_listen_http(vhttpsl_server_t server, const char *name, int port)
+{
+	listener_t listener;
+	struct listener_callbacks_s callbacks = { NULL,
+											  (on_cl_accept_callback_t)server_cl_accept,
+											  (on_cl_event_callback_t)server_cl_event,
+											  (on_cl_close_callback_t)server_cl_close,
+											  (on_sv_destroy_callback_t)server_sv_destroy };
+
+	callbacks.sv_data = sv_data_new_http(server);
+
+	listener = listener_new(name, port, callbacks, server->epoll_fd);
+	if (!listener)
+	{
+		fprintf(stderr, "vhttpsl_server_listen_https: could not create listener\n");
+
+		return EXIT_FAILURE;
+	}
+
+	vhttpsl_server_add_listener(server, listener);
+
+	return EXIT_SUCCESS;
+}
+
+int
+vhttpsl_server_listen_https(vhttpsl_server_t server, const char *name, int port, const char *cert, const char *key)
+{
+	listener_t listener;
+	struct listener_callbacks_s callbacks = { NULL,
+											  (on_cl_accept_callback_t)server_cl_accept,
+											  (on_cl_event_callback_t)server_cl_event,
+											  (on_cl_close_callback_t)server_cl_close,
+											  (on_sv_destroy_callback_t)server_sv_destroy };
+
+	callbacks.sv_data = sv_data_new_https(server, cert, key);
+
+	listener = listener_new(name, port, callbacks, server->epoll_fd);
+	if (!listener)
+	{
+		fprintf(stderr, "vhttpsl_server_listen_https: could not create listener\n");
+
+		return EXIT_FAILURE;
+	}
+
+	vhttpsl_server_add_listener(server, listener);
+
+	return EXIT_SUCCESS;
+}
+
+int
+vhttpsl_server_poll(vhttpsl_server_t server)
+{
+	int ret;
+
+	ret = listeners_poll(server->epoll_fd);
+
+	if (ret)
+	{
+		fprintf(stderr, "vhttpsl_server_poll: listeners_poll returned %d\n", ret);
+
+		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;

@@ -6,7 +6,9 @@
 #include <vhttpsl/app.h>
 #include <vhttpsl/http/request.h>
 #include <vhttpsl/http/response.h>
+#include <vhttpsl/listener.h>
 #include <vhttpsl/server.h>
+#include <vhttpsl/ssl.h>
 
 void
 callback_root(vhttpsl_app_t app, void *user_data, http_request_t request, http_response_t response)
@@ -55,7 +57,7 @@ main(int argc, char **argv)
 
 	server = vhttpsl_server_create(app);
 
-	vhttpsl_server_listen_http(server, 8080);
+	vhttpsl_server_listen_http(server, NULL, 8080);
 
 	while (vhttpsl_server_poll(server) == 0)
 		;

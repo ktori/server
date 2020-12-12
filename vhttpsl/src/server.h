@@ -4,12 +4,16 @@
 
 #pragma once
 
+#include <openssl/ssl.h>
+
+struct listener_s;
 struct vhttpsl_app_s;
 
 struct vhttpsl_server_s
 {
-	int socket_fd;
 	int epoll_fd;
-	int needs_to_write;
 	struct vhttpsl_app_s *app;
+	struct listener_s **listeners;
+	size_t listeners_size;
+	size_t listeners_count;
 };
