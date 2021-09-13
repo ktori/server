@@ -25,7 +25,7 @@ add_subdirectory(lib/streams)
 
 enable_testing()
 add_subdirectory(vhttpsl)
-add_subdirectory(manul)
+add_subdirectory(examples)
 
 # target_link_libraries(server yaml vhttpsl bits)
 # target_include_directories(server PRIVATE lib)
