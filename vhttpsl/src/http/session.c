@@ -211,8 +211,10 @@ http_session_write(http_session_t session, const char *buf, size_t size)
 				consume = 0;
 				retval = headers_read(buf + i, (int) (size - i), &session->headers_read_state,
 									  session->request->headers);
-				if (!retval)
-					s.step = SWS_BODY_BEGIN;
+				if (!retval) {
+					s.step = SWS_CR;
+					s.next_step = SWS_BODY_BEGIN;
+				}
 				else if (retval < 0)
 					s.step = SWS_ERROR;
 				else

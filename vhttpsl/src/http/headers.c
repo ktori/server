@@ -137,12 +137,14 @@ headers_read(const char *buf, int size, headers_read_state_t state_ptr, kv_list_
 					{
 						assert(value_begin);
 
+						s.value_buf.pos_read -= 1;
+						bytebuf_ensure_write(&s.value_buf, s.value_buf.pos_read - s.value_buf.pos_write);
 						memcpy(bytebuf_write_ptr(&s.value_buf), value_begin,
 							   s.value_buf.pos_read - s.value_buf.pos_write);
 						s.value_buf.pos_write = s.value_buf.pos_read;
 					}
 
-					kv_push_n(out, s.name_buf.data, s.name_buf.pos_write, s.value_buf.data, s.value_buf.pos_write - 1);
+					kv_push_n(out, s.name_buf.data, s.name_buf.pos_write, s.value_buf.data, s.value_buf.pos_write);
 					s.step = H_FIELD_VALUE_NEXT;
 				}
 				else

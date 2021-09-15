@@ -1,0 +1,1 @@
+target_sources(crud PRIVATE main.c)

@@ -36,6 +36,9 @@ vhttpsl_server_create(int epoll_fd)
 		return NULL;
 	}
 
+	server->apps_size = 2;
+	server->apps = calloc(server->apps_size, sizeof(vhttpsl_app_t));
+
 	server->listeners_size = 2;
 	server->listeners = calloc(server->listeners_size, sizeof(listener_t));
 
